@@ -21,7 +21,7 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
-final class PlaceholderRegistry {
+public final class PlaceholderRegistry {
     private static final Pattern TOKEN = Pattern.compile("%([a-z][a-z0-9_]*)%");
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
     private final Map<String, Function<Player, Component>> immediate = new HashMap<>();

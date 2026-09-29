@@ -1,6 +1,11 @@
 plugins {
     java
+    kotlin("jvm")
     id("com.gradleup.shadow")
+}
+
+kotlin {
+    jvmToolchain(25)
 }
 
 dependencies {
