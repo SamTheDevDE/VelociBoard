@@ -38,7 +38,8 @@ final class SidebarRenderer {
         ProxyScoreboard scoreboard = ScoreboardManager.getInstance().getProxyScoreboard(player);
         RenderedBoard previous = rendered.get(player.getUniqueId());
         ProxyObjective objective = scoreboard.getObjective(OBJECTIVE_NAME);
-        Component title = placeholders.render(player, board.title());
+        Map<String, String> resolved = new HashMap<>();
+        Component title = placeholders.render(player, board.title(), resolved);
         if (objective == null) {
             objective = scoreboard.createObjective(OBJECTIVE_NAME, builder -> builder
                     .title(TextHolder.of(title))
@@ -51,7 +52,7 @@ final class SidebarRenderer {
 
         List<Component> lines = new ArrayList<>(board.lines().size());
         for (String line : board.lines()) {
-            lines.add(placeholders.render(player, line));
+            lines.add(placeholders.render(player, line, resolved));
         }
         for (int index = 0; index < lines.size(); index++) {
             Component line = lines.get(index);

@@ -1,16 +1,19 @@
 package de.samthedev.velociboard;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.velocitypowered.api.proxy.Player;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.junit.jupiter.api.Test;
 
@@ -42,5 +45,32 @@ class PlaceholderRegistryTest {
         assertTrue(changed.await(2, TimeUnit.SECONDS));
         assertEquals("ready", plain.serialize(placeholders.render(player, "%slow%")));
         placeholders.forget(id);
+    }
+
+    @Test
+    void polledPlaceholderUsesCacheBetweenUpdates() {
+        Player player = mock(Player.class);
+        when(player.getUniqueId()).thenReturn(UUID.randomUUID());
+        AtomicInteger calls = new AtomicInteger();
+        PlaceholderRegistry placeholders = new PlaceholderRegistry(ignored -> {});
+        placeholders.registerPolled("count", Duration.ofHours(1), ignored -> Integer.toString(calls.incrementAndGet()));
+
+        assertTrue(placeholders.update(player, false));
+        assertEquals("1", plain.serialize(placeholders.render(player, "%count%")));
+        assertFalse(placeholders.update(player, false));
+        assertEquals("1", plain.serialize(placeholders.render(player, "%count%")));
+        assertTrue(placeholders.update(player, true));
+        assertEquals("2", plain.serialize(placeholders.render(player, "%count%")));
+    }
+
+    @Test
+    void repeatedPlaceholderResolvesOncePerRender() {
+        Player player = mock(Player.class);
+        AtomicInteger calls = new AtomicInteger();
+        PlaceholderRegistry placeholders = new PlaceholderRegistry(ignored -> {});
+        placeholders.register("name", ignored -> Integer.toString(calls.incrementAndGet()));
+
+        assertEquals("1 1", plain.serialize(placeholders.render(player, "%name% %name%", new HashMap<>())));
+        assertEquals(1, calls.get());
     }
 }

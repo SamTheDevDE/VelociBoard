@@ -24,6 +24,10 @@ Install VelocityScoreboardAPI and VelociBoard in the Velocity proxy's `plugins/`
 
 ```yaml
 enabled: true
+placeholder-refresh:
+  server_online: 1000
+  network_online: 1000
+  ping: 5000
 ```
 
 Each `.yml` file in `scoreboards/` defines a board. An empty or omitted `servers` list matches every server. The highest priority matching board wins; ties use the filename in alphabetical order. For example, `scoreboards/lobby.yml` can contain:
@@ -45,6 +49,6 @@ lines:
 
 At most 15 lines are supported.
 
-Native placeholders: `%player_name%`, `%player_uuid%`, `%server_name%`, `%server_online%`, `%network_online%`, and `%ping%`. Unknown placeholders remain visible so typos are easier to spot. Player counts and ping are currently refreshed when the board is rendered; timed refresh is still in development.
+Native placeholders: `%player_name%`, `%player_uuid%`, `%server_name%`, `%server_online%`, `%network_online%`, and `%ping%`. Unknown placeholders remain visible so typos are easier to spot. The refresh values are milliseconds; counts and ping use cached values and one shared refresh task. Player name, UUID, and server name update on join or server switch.
 
 If you used the earlier single-board config, VelociBoard copies its title and lines into `scoreboards/default.yml` when the directory is first created. The old entries in `config.yml` can then be removed.

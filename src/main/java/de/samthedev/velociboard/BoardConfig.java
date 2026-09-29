@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Comparator;
 import java.util.List;
@@ -14,7 +15,7 @@ import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 import org.yaml.snakeyaml.error.YAMLException;
 
-record BoardConfig(boolean enabled, List<BoardDefinition> boards) {
+record BoardConfig(boolean enabled, List<BoardDefinition> boards, Map<String, Duration> placeholderRefresh) {
     static BoardConfig load(Path dataDirectory) throws IOException {
         Files.createDirectories(dataDirectory);
         Path globalFile = dataDirectory.resolve("config.yml");
@@ -25,6 +26,28 @@ record BoardConfig(boolean enabled, List<BoardDefinition> boards) {
         Object enabled = global.get("enabled");
         if (!(enabled instanceof Boolean active)) {
             throw new IllegalArgumentException("config.yml: 'enabled' must be true or false");
+        }
+        Map<String, Duration> refresh = new LinkedHashMap<>();
+        refresh.put("server_online", Duration.ofMillis(1000));
+        refresh.put("network_online", Duration.ofMillis(1000));
+        refresh.put("ping", Duration.ofMillis(5000));
+        Object customRefresh = global.get("placeholder-refresh");
+        if (customRefresh != null) {
+            if (!(customRefresh instanceof Map<?, ?> settings)) {
+                throw new IllegalArgumentException("config.yml: 'placeholder-refresh' must be a mapping");
+            }
+            for (var entry : settings.entrySet()) {
+                if (!(entry.getKey() instanceof String name) || !refresh.containsKey(name)) {
+                    throw new IllegalArgumentException("config.yml: unknown placeholder-refresh entry '" + entry.getKey() + "'");
+                }
+                if (!(entry.getValue() instanceof Number milliseconds)
+                        || milliseconds.longValue() < 50
+                        || milliseconds.doubleValue() != milliseconds.longValue()) {
+                    throw new IllegalArgumentException("config.yml: 'placeholder-refresh." + name
+                            + "' must be whole milliseconds (at least 50)");
+                }
+                refresh.put(name, Duration.ofMillis(milliseconds.longValue()));
+            }
         }
 
         Path boardsDirectory = dataDirectory.resolve("scoreboards");
@@ -55,7 +78,7 @@ record BoardConfig(boolean enabled, List<BoardDefinition> boards) {
                     .map(file -> BoardDefinition.load(file, readYaml(file)))
                     .toList();
         }
-        return new BoardConfig(active, boards);
+        return new BoardConfig(active, boards, Map.copyOf(refresh));
     }
 
     BoardDefinition select(String serverName) {

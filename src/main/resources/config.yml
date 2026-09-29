@@ -1,1 +1,6 @@
 enabled: true
+
+placeholder-refresh:
+  server_online: 1000
+  network_online: 1000
+  ping: 5000

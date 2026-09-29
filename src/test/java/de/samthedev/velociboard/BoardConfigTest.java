@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -81,5 +82,23 @@ class BoardConfigTest {
         BoardConfig config = BoardConfig.load(directory);
         assertFalse(config.enabled());
         assertNull(config.select("lobby"));
+    }
+
+    @Test
+    void readsRefreshIntervals() throws Exception {
+        BoardConfig.load(directory);
+        Files.writeString(directory.resolve("config.yml"), """
+                enabled: true
+                placeholder-refresh:
+                  ping: 2500
+                """);
+        assertEquals(Duration.ofMillis(2500), BoardConfig.load(directory).placeholderRefresh().get("ping"));
+
+        Files.writeString(directory.resolve("config.yml"), """
+                enabled: true
+                placeholder-refresh:
+                  ping: -1
+                """);
+        assertThrows(IllegalArgumentException.class, () -> BoardConfig.load(directory));
     }
 }

@@ -7,13 +7,16 @@ import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.player.ServerPostConnectEvent;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
+import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.plugin.Dependency;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
+import com.velocitypowered.api.scheduler.ScheduledTask;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import net.kyori.adventure.text.Component;
@@ -27,9 +30,10 @@ public final class VelociBoard {
     private final ProxyServer proxy;
     private final Logger logger;
     private final Path dataDirectory;
-    private BoardConfig config;
+    private volatile BoardConfig config;
     private final PlaceholderRegistry placeholders;
     private final SidebarRenderer renderer;
+    private ScheduledTask refreshTask;
 
     @Inject
     public VelociBoard(ProxyServer proxy, Logger logger, @DataDirectory Path dataDirectory) {
@@ -42,10 +46,11 @@ public final class VelociBoard {
         placeholders.register("player_uuid", player -> player.getUniqueId().toString());
         placeholders.register("server_name", player -> player.getCurrentServer()
                 .map(connection -> connection.getServer().getServerInfo().getName()).orElse("unknown"));
-        placeholders.register("server_online", player -> player.getCurrentServer()
+        placeholders.registerPolled("server_online", Duration.ofSeconds(1), player -> player.getCurrentServer()
                 .map(connection -> Integer.toString(connection.getServer().getPlayersConnected().size())).orElse("0"));
-        placeholders.register("network_online", player -> Integer.toString(proxy.getPlayerCount()));
-        placeholders.register("ping", player -> Long.toString(player.getPing()));
+        placeholders.registerPolled("network_online", Duration.ofSeconds(1),
+                player -> Integer.toString(proxy.getPlayerCount()));
+        placeholders.registerPolled("ping", Duration.ofSeconds(5), player -> Long.toString(player.getPing()));
     }
 
     @Subscribe
@@ -56,11 +61,26 @@ public final class VelociBoard {
                 .plugin(this)
                 .build();
         proxy.getCommandManager().register(meta, new BoardCommand());
+        refreshTask = proxy.getScheduler().buildTask(this, () -> {
+            for (Player player : proxy.getAllPlayers()) {
+                if (placeholders.update(player, false)) {
+                    renderer.refresh(player, config);
+                }
+            }
+        }).repeat(Duration.ofMillis(250)).schedule();
         logger.info("VelociBoard started");
     }
 
     @Subscribe
+    public void onProxyShutdown(ProxyShutdownEvent event) {
+        if (refreshTask != null) {
+            refreshTask.cancel();
+        }
+    }
+
+    @Subscribe
     public void onServerConnect(ServerPostConnectEvent event) {
+        placeholders.update(event.getPlayer(), true);
         renderer.refresh(event.getPlayer(), config);
     }
 
@@ -77,13 +97,16 @@ public final class VelociBoard {
 
     private boolean reload() {
         try {
-            config = BoardConfig.load(dataDirectory);
+            BoardConfig loaded = BoardConfig.load(dataDirectory);
+            placeholders.configureRefresh(loaded.placeholderRefresh());
+            config = loaded;
             for (var player : proxy.getAllPlayers()) {
+                placeholders.update(player, true);
                 renderer.refresh(player, config);
             }
             return true;
         } catch (IOException | IllegalArgumentException error) {
-            logger.error("Failed to load config.yml: {}", error.getMessage());
+            logger.error("Failed to load VelociBoard configuration: {}", error.getMessage());
             return false;
         }
     }
