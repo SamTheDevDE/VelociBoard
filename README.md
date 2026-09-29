@@ -34,6 +34,10 @@ The Velocity and Paper jars are written to `velociboard-velocity/build/libs/` an
 
 Install VelocityScoreboardAPI and VelociBoard in the Velocity proxy's `plugins/` directory, then restart the proxy. VelociBoard creates `plugins/velociboard/config.yml`, `animations.yml`, and example files in `plugins/velociboard/scoreboards/` on first startup. Edit the files and run `/velociboard reload` to read them again. Reload requires `velociboard.reload`.
 
+Existing generated files are kept during upgrades. If an older `animations.yml` or board file contains `<purple>`, replace it with the valid MiniMessage color `<light_purple>` (and `</light_purple>` for a closing tag), then reload VelociBoard. Other standard MiniMessage tags such as `<gray>`, `<white>`, and `<bold>` are supported.
+
+If Velocitab is installed on the same proxy, set `send_scoreboard_packets: false` in `plugins/velocitab/config.yml` and restart the proxy. Velocitab otherwise registers `UpdateTeamsPacket` at the same packet IDs as VelocityScoreboardAPI, causing its initialization to fail with `another packet is already registered`. This setting disables Velocitab's team packet features, including player list sorting and nametag formatting. Velocitab's other tab list features can still be used. If you need those team features, the two packet owners cannot currently run together on the same proxy.
+
 Players can use `/velociboard toggle` or `/scoreboard` with the `velociboard.toggle` permission. Their choice is saved to `plugins/velociboard/preferences.db` and loaded asynchronously when they join.
 
 `/velociboard` also has the aliases `/vboard` and `/vb`. Commands:
@@ -67,7 +71,7 @@ enabled: true
 servers:
   - lobby
 priority: 100
-title: "<purple><bold>VelociBoard</bold></purple>"
+title: "<light_purple><bold>VelociBoard</bold></light_purple>"
 lines:
   - ""
   - "<gray>Player"
@@ -86,9 +90,9 @@ title:
   interval: 250
   mode: bounce
   frames:
-    - "<purple>V"
-    - "<purple>Veloci"
-    - "<purple>VelociBoard"
+    - "<light_purple>V"
+    - "<light_purple>Veloci"
+    - "<light_purple>VelociBoard"
 ```
 
 `loop` restarts after the last frame. `bounce` walks back toward the first frame. One shared task advances animations for all players.
