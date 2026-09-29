@@ -18,7 +18,7 @@ The plugin jar is written to `build/libs/`.
 
 ## Install
 
-Install VelocityScoreboardAPI and VelociBoard in the Velocity proxy's `plugins/` directory, then restart the proxy. VelociBoard creates `plugins/velociboard/config.yml` and example files in `plugins/velociboard/scoreboards/` on first startup. Edit the files and run `/velociboard reload` to read them again. Reload requires `velociboard.reload`.
+Install VelocityScoreboardAPI and VelociBoard in the Velocity proxy's `plugins/` directory, then restart the proxy. VelociBoard creates `plugins/velociboard/config.yml`, `animations.yml`, and example files in `plugins/velociboard/scoreboards/` on first startup. Edit the files and run `/velociboard reload` to read them again. Reload requires `velociboard.reload`.
 
 `config.yml` contains the global switch:
 
@@ -51,6 +51,20 @@ lines:
 ```
 
 At most 15 lines are supported.
+
+Use `<animation:name>` in a board title or line to display an animation from `animations.yml`:
+
+```yaml
+title:
+  interval: 250
+  mode: bounce
+  frames:
+    - "<purple>V"
+    - "<purple>Veloci"
+    - "<purple>VelociBoard"
+```
+
+`loop` restarts after the last frame. `bounce` walks back toward the first frame. One shared task advances animations for all players.
 
 Native placeholders: `%player_name%`, `%player_uuid%`, `%server_name%`, `%server_online%`, `%network_online%`, and `%ping%`. Unknown placeholders remain visible so typos are easier to spot. The refresh values are milliseconds; counts and ping use cached values and one shared refresh task. Player name, UUID, and server name update on join or server switch.
 

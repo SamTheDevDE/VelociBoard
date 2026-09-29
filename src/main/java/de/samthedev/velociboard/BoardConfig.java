@@ -15,7 +15,8 @@ import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 import org.yaml.snakeyaml.error.YAMLException;
 
-record BoardConfig(boolean enabled, List<BoardDefinition> boards, Map<String, Duration> placeholderRefresh) {
+record BoardConfig(boolean enabled, List<BoardDefinition> boards, Map<String, Duration> placeholderRefresh,
+        Animations animations) {
     static BoardConfig load(Path dataDirectory) throws IOException {
         Files.createDirectories(dataDirectory);
         Path globalFile = dataDirectory.resolve("config.yml");
@@ -81,7 +82,18 @@ record BoardConfig(boolean enabled, List<BoardDefinition> boards, Map<String, Du
                     .map(file -> BoardDefinition.load(file, readYaml(file)))
                     .toList();
         }
-        return new BoardConfig(active, boards, Map.copyOf(refresh));
+        Path animationsFile = dataDirectory.resolve("animations.yml");
+        if (Files.notExists(animationsFile)) {
+            copyResource("animations.yml", animationsFile);
+        }
+        Animations animations = Animations.load(animationsFile);
+        for (BoardDefinition board : boards) {
+            animations.validate(board.id(), "title", board.title());
+            for (int index = 0; index < board.lines().size(); index++) {
+                animations.validate(board.id(), "lines[" + index + "]", board.lines().get(index));
+            }
+        }
+        return new BoardConfig(active, boards, Map.copyOf(refresh), animations);
     }
 
     BoardDefinition select(String serverName) {

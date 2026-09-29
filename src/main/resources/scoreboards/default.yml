@@ -1,7 +1,7 @@
 enabled: true
 priority: 0
 
-title: "<purple><bold>VelociBoard</bold></purple>"
+title: "<animation:title>"
 lines:
   - ""
   - "<gray>Player"

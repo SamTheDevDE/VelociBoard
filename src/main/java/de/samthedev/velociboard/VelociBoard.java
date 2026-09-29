@@ -72,12 +72,14 @@ public final class VelociBoard {
                 .build();
         proxy.getCommandManager().register(meta, new BoardCommand());
         refreshTask = proxy.getScheduler().buildTask(this, () -> {
+            BoardConfig current = config;
+            boolean animated = current != null && current.animations().tick();
             for (Player player : proxy.getAllPlayers()) {
-                if (placeholders.update(player, false)) {
-                    renderer.refresh(player, config);
+                if (placeholders.update(player, false) || animated) {
+                    renderer.refresh(player, current);
                 }
             }
-        }).repeat(Duration.ofMillis(250)).schedule();
+        }).repeat(Duration.ofMillis(50)).schedule();
         logger.info("VelociBoard started");
     }
 
