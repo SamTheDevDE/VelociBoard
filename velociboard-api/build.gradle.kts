@@ -1,5 +1,10 @@
 plugins {
     `java-library`
+    kotlin("jvm")
+}
+
+kotlin {
+    jvmToolchain(25)
 }
 
 dependencies {
