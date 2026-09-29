@@ -2,7 +2,7 @@
 
 VelociBoard is a sidebar scoreboard plugin for Velocity networks. The proxy owns the scoreboard; backend servers do not need to install it.
 
-This project is in early development. The current build displays proxy sidebars with MiniMessage formatting and `%player_name%` and `%server_name%` placeholders. It selects boards by backend server and priority, updates on server switches, and supports `/velociboard reload`.
+This project is in early development. The current build displays proxy sidebars with MiniMessage formatting and native placeholders. It selects boards by backend server and priority, updates on server switches, and supports `/velociboard reload`.
 
 Velocity does not expose scoreboard packets through its public API. For now, VelociBoard uses [VelocityScoreboardAPI](https://github.com/NEZNAMY/VelocityScoreboardAPI) to send them. VelociBoard does not require VelociTab. Sidebar lines require a Minecraft 1.20.3 or newer client.
 
@@ -44,5 +44,7 @@ lines:
 ```
 
 At most 15 lines are supported.
+
+Native placeholders: `%player_name%`, `%player_uuid%`, `%server_name%`, `%server_online%`, `%network_online%`, and `%ping%`. Unknown placeholders remain visible so typos are easier to spot. Player counts and ping are currently refreshed when the board is rendered; timed refresh is still in development.
 
 If you used the earlier single-board config, VelociBoard copies its title and lines into `scoreboards/default.yml` when the directory is first created. The old entries in `config.yml` can then be removed.

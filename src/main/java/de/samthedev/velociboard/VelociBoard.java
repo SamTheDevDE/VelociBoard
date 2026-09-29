@@ -10,10 +10,12 @@ import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.plugin.Dependency;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
+import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.slf4j.Logger;
@@ -26,13 +28,24 @@ public final class VelociBoard {
     private final Logger logger;
     private final Path dataDirectory;
     private BoardConfig config;
-    private final SidebarRenderer renderer = new SidebarRenderer();
+    private final PlaceholderRegistry placeholders;
+    private final SidebarRenderer renderer;
 
     @Inject
     public VelociBoard(ProxyServer proxy, Logger logger, @DataDirectory Path dataDirectory) {
         this.proxy = proxy;
         this.logger = logger;
         this.dataDirectory = dataDirectory;
+        this.placeholders = new PlaceholderRegistry(this::refreshPlayer);
+        this.renderer = new SidebarRenderer(placeholders);
+        placeholders.register("player_name", Player::getUsername);
+        placeholders.register("player_uuid", player -> player.getUniqueId().toString());
+        placeholders.register("server_name", player -> player.getCurrentServer()
+                .map(connection -> connection.getServer().getServerInfo().getName()).orElse("unknown"));
+        placeholders.register("server_online", player -> player.getCurrentServer()
+                .map(connection -> Integer.toString(connection.getServer().getPlayersConnected().size())).orElse("0"));
+        placeholders.register("network_online", player -> Integer.toString(proxy.getPlayerCount()));
+        placeholders.register("ping", player -> Long.toString(player.getPing()));
     }
 
     @Subscribe
@@ -54,6 +67,12 @@ public final class VelociBoard {
     @Subscribe
     public void onDisconnect(DisconnectEvent event) {
         renderer.forget(event.getPlayer());
+        placeholders.forget(event.getPlayer().getUniqueId());
+    }
+
+    private void refreshPlayer(UUID playerId) {
+        proxy.getScheduler().buildTask(this, () -> proxy.getPlayer(playerId)
+                .ifPresent(player -> renderer.refresh(player, config))).schedule();
     }
 
     private boolean reload() {

@@ -15,13 +15,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 
 final class SidebarRenderer {
     private static final String OBJECTIVE_NAME = "velociboard";
-    private final MiniMessage miniMessage = MiniMessage.miniMessage();
+    private final PlaceholderRegistry placeholders;
     private final Map<UUID, RenderedBoard> rendered = new HashMap<>();
+
+    SidebarRenderer(PlaceholderRegistry placeholders) {
+        this.placeholders = placeholders;
+    }
 
     synchronized void refresh(Player player, BoardConfig config) {
         String serverName = player.getCurrentServer()
@@ -36,7 +38,7 @@ final class SidebarRenderer {
         ProxyScoreboard scoreboard = ScoreboardManager.getInstance().getProxyScoreboard(player);
         RenderedBoard previous = rendered.get(player.getUniqueId());
         ProxyObjective objective = scoreboard.getObjective(OBJECTIVE_NAME);
-        Component title = render(player, serverName, board.title());
+        Component title = placeholders.render(player, board.title());
         if (objective == null) {
             objective = scoreboard.createObjective(OBJECTIVE_NAME, builder -> builder
                     .title(TextHolder.of(title))
@@ -49,7 +51,7 @@ final class SidebarRenderer {
 
         List<Component> lines = new ArrayList<>(board.lines().size());
         for (String line : board.lines()) {
-            lines.add(render(player, serverName, line));
+            lines.add(placeholders.render(player, line));
         }
         for (int index = 0; index < lines.size(); index++) {
             Component line = lines.get(index);
@@ -87,14 +89,6 @@ final class SidebarRenderer {
 
     synchronized void forget(Player player) {
         rendered.remove(player.getUniqueId());
-    }
-
-    private Component render(Player player, String serverName, String text) {
-        String template = text.replace("%player_name%", "<player_name>")
-                .replace("%server_name%", "<server_name>");
-        return miniMessage.deserialize(template,
-                Placeholder.unparsed("player_name", player.getUsername()),
-                Placeholder.unparsed("server_name", serverName));
     }
 
     private static String holder(int index) {

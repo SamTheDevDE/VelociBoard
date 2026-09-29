@@ -15,6 +15,8 @@ dependencies {
     compileOnly("net.william278:velocityscoreboardapi:2.1.1")
     implementation("org.yaml:snakeyaml:2.7")
     testImplementation("org.junit.jupiter:junit-jupiter:5.13.4")
+    testImplementation("com.velocitypowered:velocity-api:4.2.1-SNAPSHOT")
+    testImplementation("org.mockito:mockito-core:5.18.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

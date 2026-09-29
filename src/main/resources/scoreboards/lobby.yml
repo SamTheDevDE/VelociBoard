@@ -8,4 +8,4 @@ lines:
   - ""
   - "<gray>%player_name%"
   - ""
-  - "<gray>Server: <white>%server_name%"
+  - "<gray>Players: <white>%server_online%"
