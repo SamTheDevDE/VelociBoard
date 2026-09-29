@@ -29,7 +29,11 @@ final class SidebarRenderer {
     }
 
     synchronized void refresh(Player player, BoardConfig config) {
-        if (!visible.test(player)) {
+        refresh(player, config, null);
+    }
+
+    synchronized void refresh(Player player, BoardConfig config, BoardDefinition preview) {
+        if (preview == null && !visible.test(player)) {
             remove(player);
             return;
         }
@@ -37,7 +41,7 @@ final class SidebarRenderer {
                 .map(connection -> connection.getServer().getServerInfo().getName())
                 .orElse("unknown");
         Map<String, Component> resolved = new HashMap<>();
-        BoardDefinition board = config == null ? null
+        BoardDefinition board = preview != null ? preview : config == null ? null
                 : config.select(serverName, candidate -> candidate.allowed(player, placeholders, resolved));
         if (player.getProtocolVersion().lessThan(ProtocolVersion.MINECRAFT_1_20_3) || board == null) {
             remove(player);

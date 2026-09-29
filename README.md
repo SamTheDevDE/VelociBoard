@@ -22,6 +22,17 @@ Install VelocityScoreboardAPI and VelociBoard in the Velocity proxy's `plugins/`
 
 Players can use `/velociboard toggle` or `/scoreboard` with the `velociboard.toggle` permission. Their choice is saved to `plugins/velociboard/preferences.db` and loaded asynchronously when they join.
 
+`/velociboard` also has the aliases `/vboard` and `/vb`. Commands:
+
+| Command | Permission | Use |
+| --- | --- | --- |
+| `reload` | `velociboard.reload` | Read configuration files again |
+| `toggle` | `velociboard.toggle` | Hide or show your sidebar |
+| `list` | `velociboard.admin` | Show board IDs and priorities |
+| `preview <board>` | `velociboard.preview` | View a board until switching servers or toggling |
+| `placeholders` | `velociboard.admin` | List registered proxy placeholders |
+| `debug` | `velociboard.debug` | Inspect your board, values, and bridge state |
+
 `config.yml` contains the global switch:
 
 ```yaml

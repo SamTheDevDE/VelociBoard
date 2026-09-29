@@ -5,6 +5,8 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -151,6 +153,27 @@ public final class PlaceholderRegistry {
         }
     }
 
+    synchronized Set<String> names() {
+        Set<String> names = new TreeSet<>(immediate.keySet());
+        names.addAll(polled.keySet());
+        names.addAll(cached.keySet());
+        return names;
+    }
+
+    synchronized String debugValue(Player player, String name) {
+        Map<String, Component> resolved = new HashMap<>();
+        String value = resolveText(player, name, resolved);
+        if (value == null) {
+            return "unknown";
+        }
+        PolledPlaceholder polling = polled.get(name);
+        CachedPlaceholder caching = cached.get(name);
+        long refreshedAt = polling != null ? polling.refreshedAt(player.getUniqueId())
+                : caching != null ? caching.refreshedAt(player.getUniqueId()) : 0;
+        String age = refreshedAt == 0 ? "event" : Duration.ofNanos(System.nanoTime() - refreshedAt).toMillis() + "ms ago";
+        return value + " (" + age + ")";
+    }
+
     private boolean contains(String name) {
         return immediate.containsKey(name) || cached.containsKey(name) || polled.containsKey(name)
                 || (backendResolver != null && name.startsWith("backend_") && name.length() > 8);
@@ -195,12 +218,18 @@ public final class PlaceholderRegistry {
                     return;
                 }
                 value.text = resolved == null ? "" : resolved;
+                value.refreshedAt = System.nanoTime();
             }
             onChange.accept(id);
         }
 
         private void forget(UUID id) {
             values.remove(id);
+        }
+
+        private long refreshedAt(UUID id) {
+            CachedValue value = values.get(id);
+            return value == null ? 0 : value.refreshedAt;
         }
     }
 
@@ -221,7 +250,7 @@ public final class PlaceholderRegistry {
                 return false;
             }
             Component value = Objects.requireNonNullElse(resolver.apply(player), Component.empty());
-            values.put(id, new PolledValue(value, now + interval.toNanos()));
+            values.put(id, new PolledValue(value, now, now + interval.toNanos()));
             return previous == null || !value.equals(previous.text);
         }
 
@@ -233,14 +262,20 @@ public final class PlaceholderRegistry {
         private void forget(UUID id) {
             values.remove(id);
         }
+
+        private long refreshedAt(UUID id) {
+            PolledValue value = values.get(id);
+            return value == null ? 0 : value.refreshedAt();
+        }
     }
 
-    private record PolledValue(Component text, long nextRefresh) {
+    private record PolledValue(Component text, long refreshedAt, long nextRefresh) {
     }
 
     private static final class CachedValue {
         private String text = "";
         private long refreshAt = Long.MIN_VALUE;
+        private long refreshedAt;
         private boolean refreshing;
     }
 }

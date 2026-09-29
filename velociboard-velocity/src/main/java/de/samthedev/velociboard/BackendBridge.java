@@ -92,6 +92,15 @@ final class BackendBridge {
         return state.server().equals(current) ? state.values().getOrDefault(key, "") : "";
     }
 
+    String describe(Player player) {
+        State state = values.get(player.getUniqueId());
+        if (state == null) {
+            return "no data";
+        }
+        long age = (System.nanoTime() - state.updatedAt()) / 1_000_000;
+        return state.server() + ", " + state.values().size() + " values, " + age + "ms old";
+    }
+
     void clearOnSwitch(Player player) {
         String current = player.getCurrentServer()
                 .map(connection -> connection.getServer().getServerInfo().getName()).orElse("");
