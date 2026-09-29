@@ -2,7 +2,7 @@ package de.samthedev.velociboard
 
 import java.nio.file.Path
 
-class Animations private constructor(private val animations: Map<String, Animation>) {
+internal class Animations private constructor(private val animations: Map<String, Animation>) {
     private val startedAt = System.nanoTime()
 
     @Synchronized
@@ -32,7 +32,6 @@ class Animations private constructor(private val animations: Map<String, Animati
     companion object {
         private val reference = Regex("<animation:([a-z][a-z0-9_]*)>")
 
-        @JvmStatic
         fun load(file: Path): Animations {
             val loaded = HashMap<String, Animation>()
             for ((key, value) in BoardConfig.readYaml(file)) {

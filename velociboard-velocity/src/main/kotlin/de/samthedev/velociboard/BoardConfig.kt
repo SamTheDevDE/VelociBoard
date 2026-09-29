@@ -9,17 +9,12 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
 
-data class BoardConfig(
+internal data class BoardConfig(
     val enabled: Boolean,
     val boards: List<BoardDefinition>,
     val placeholderRefresh: Map<String, Duration>,
     val animations: Animations,
 ) {
-    fun enabled() = enabled
-    fun boards() = boards
-    fun placeholderRefresh() = placeholderRefresh
-    fun animations() = animations
-
     fun select(serverName: String): BoardDefinition? = select(serverName) { true }
 
     fun select(serverName: String, allowed: java.util.function.Predicate<BoardDefinition>): BoardDefinition? {
@@ -35,7 +30,6 @@ data class BoardConfig(
     }
 
     companion object {
-        @JvmStatic
         @Throws(IOException::class)
         fun load(dataDirectory: Path): BoardConfig {
             Files.createDirectories(dataDirectory)
@@ -101,7 +95,6 @@ data class BoardConfig(
             return BoardConfig(enabled, boards, refresh.toMap(), animations)
         }
 
-        @JvmStatic
         fun readYaml(file: Path): Map<*, *> {
             val name = if (file.parent.fileName.toString() == "scoreboards")
                 "scoreboards/${file.fileName}" else file.fileName.toString()

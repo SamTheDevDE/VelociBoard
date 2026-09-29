@@ -24,7 +24,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          release_type=()
+          if [[ "$GITHUB_REF_NAME" == v0.* ]]; then
+            release_type+=(--prerelease)
+          fi
           gh release create "$GITHUB_REF_NAME" \
             velociboard-velocity/build/libs/VelociBoard-Velocity-*.jar \
             velociboard-paper/build/libs/VelociBoard-Paper-*.jar \
-            --title "$GITHUB_REF_NAME" --generate-notes
+            --title "$GITHUB_REF_NAME" --generate-notes "${release_type[@]}"

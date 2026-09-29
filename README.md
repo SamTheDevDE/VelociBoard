@@ -1,6 +1,6 @@
 # VelociBoard
 
-VelociBoard is a sidebar scoreboard plugin for Velocity networks. The proxy owns the scoreboard. A small Paper/Folia bridge is available if you want backend values.
+VelociBoard is a Kotlin sidebar scoreboard plugin for Velocity networks. The proxy owns the scoreboard. A small Paper/Folia bridge is available if you want backend values.
 
 This project is in early development. The current build displays proxy sidebars with MiniMessage formatting and native placeholders. It selects boards by backend server and priority, updates on server switches, and saves player toggle preferences.
 
@@ -120,9 +120,9 @@ Use `%backend_world%`, `%backend_x%`, `%backend_y%`, and `%backend_z%` in board 
 
 Other Paper plugins can register up to 12 more values. Add `VelociBoardPaper` as a dependency in your plugin's `plugin.yml` and compile against the Paper jar:
 
-```java
-VelociBoardBridge.registerPlaceholder("economy_balance", player -> cachedBalance(player.getUniqueId()));
-VelociBoardBridge.refresh(player); // Call after an event changes the balance.
+```kotlin
+VelociBoardBridge.registerPlaceholder("economy_balance") { player -> cachedBalance(player.uniqueId) }
+VelociBoardBridge.refresh(player)
 ```
 
 Use `%backend_economy_balance%` on Velocity. The synchronous provider runs on the player's entity thread and should only read local, fast data. For database-backed data, use `registerAsyncPlaceholder(name, refreshInterval, uuid -> completionStage)`; VelociBoard caches its latest result and never waits for it while gathering a snapshot. Call `unregisterPlaceholder(name)` when the owning plugin disables. Values are limited to 256 UTF-8 bytes.
@@ -131,11 +131,11 @@ Use `%backend_economy_balance%` on Velocity. The synchronous provider runs on th
 
 Proxy plugins can compile against the Velocity jar and use the API after plugin initialization. Declare VelociBoard as a plugin dependency so it is loaded first.
 
-```java
-VelociBoardAPI api = VelociBoard.getApi();
-api.placeholders().register("queue_position", player -> queueCache.getOrDefault(player.getUniqueId(), "0"));
-api.refresh(player); // Call when the cached value changes.
-api.showBoard(player, "lobby");
+```kotlin
+val api = VelociBoard.getApi()
+api.placeholders().register("queue_position") { player -> queueCache[player.uniqueId] ?: "0" }
+api.refresh(player)
+api.showBoard(player, "lobby")
 ```
 
 `registerCached` accepts an asynchronous resolver and a refresh interval. It keeps the last result while a refresh runs. Fast `register` resolvers may run while rendering, so read local state there. Remove your placeholders with `api.placeholders().unregister(name)` when your plugin stops. `showBoard` and `hideBoard` apply until the player changes server or disconnects; they do not change the saved toggle preference.

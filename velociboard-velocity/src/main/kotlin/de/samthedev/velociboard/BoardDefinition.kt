@@ -4,7 +4,7 @@ import com.velocitypowered.api.proxy.Player
 import net.kyori.adventure.text.Component
 import java.nio.file.Path
 
-data class BoardDefinition(
+internal data class BoardDefinition(
     val id: String,
     val enabled: Boolean,
     val servers: List<String>,
@@ -14,15 +14,6 @@ data class BoardDefinition(
     val condition: Condition?,
     val permission: String?,
 ) {
-    fun id() = id
-    fun enabled() = enabled
-    fun servers() = servers
-    fun priority() = priority
-    fun title() = title
-    fun lines() = lines
-    fun condition() = condition
-    fun permission() = permission
-
     fun matches(serverName: String): Boolean = enabled && (servers.isEmpty() || serverName in servers)
 
     fun allowed(player: Player, placeholders: PlaceholderRegistry, resolved: MutableMap<String, Component>): Boolean =
@@ -30,7 +21,6 @@ data class BoardDefinition(
             (condition == null || condition.matches(player, placeholders, resolved))
 
     companion object {
-        @JvmStatic
         fun load(file: Path, values: Map<*, *>): BoardDefinition {
             val name = file.fileName.toString()
             val location = "scoreboards/$name"
@@ -56,14 +46,12 @@ data class BoardDefinition(
                 parseCondition(values, location), parsePermission(values, location))
         }
 
-        @JvmStatic
         fun parseCondition(values: Map<*, *>, location: String): Condition? {
             val value = values["condition"] ?: return null
             require(value is String) { invalid(location, "condition", "must be text") }
             return Condition.parse(value, "$location: 'condition'")
         }
 
-        @JvmStatic
         fun parsePermission(values: Map<*, *>, location: String): String? {
             val value = values["permission"] ?: return null
             require(value is String && value.isNotBlank()) { invalid(location, "permission", "must be nonempty text") }

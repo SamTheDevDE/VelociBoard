@@ -3,17 +3,12 @@ package de.samthedev.velociboard
 import com.velocitypowered.api.proxy.Player
 import net.kyori.adventure.text.Component
 
-data class BoardLine(val text: String, val condition: Condition?, val permission: String?) {
-    fun text() = text
-    fun condition() = condition
-    fun permission() = permission
-
+internal data class BoardLine(val text: String, val condition: Condition?, val permission: String?) {
     fun visible(player: Player, placeholders: PlaceholderRegistry, resolved: MutableMap<String, Component>): Boolean =
         (permission == null || player.hasPermission(permission)) &&
             (condition == null || condition.matches(player, placeholders, resolved))
 
     companion object {
-        @JvmStatic
         fun parse(value: Any?, location: String): BoardLine {
             if (value is String) return BoardLine(value, null, null)
             require(value is Map<*, *>) { "$location: must be text or a mapping" }

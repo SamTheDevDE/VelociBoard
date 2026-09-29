@@ -10,7 +10,7 @@ import net.kyori.adventure.text.Component
 import java.util.UUID
 import java.util.function.Predicate
 
-class SidebarRenderer(private val placeholders: PlaceholderRegistry, private val visible: Predicate<Player>) {
+internal class SidebarRenderer(private val placeholders: PlaceholderRegistry, private val visible: Predicate<Player>) {
     private val rendered = HashMap<UUID, RenderedBoard>()
 
     @Synchronized

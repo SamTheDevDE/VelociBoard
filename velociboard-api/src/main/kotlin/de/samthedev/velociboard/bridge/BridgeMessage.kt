@@ -21,9 +21,6 @@ class BridgeMessage(val playerId: UUID, values: Map<String, String>) {
     override fun equals(other: Any?): Boolean = other is BridgeMessage && playerId == other.playerId && values == other.values
     override fun hashCode(): Int = 31 * playerId.hashCode() + values.hashCode()
 
-    fun playerId(): UUID = playerId
-    fun values(): Map<String, String> = values
-
     fun encode(): ByteArray {
         val bytes = ByteArrayOutputStream()
         DataOutputStream(bytes).use { output ->
@@ -53,7 +50,6 @@ class BridgeMessage(val playerId: UUID, values: Map<String, String>) {
         private const val MAX_VALUES = 32
         private const val MAX_VALUE_BYTES = 256
 
-        @JvmStatic
         fun decode(bytes: ByteArray?): BridgeMessage {
             require(bytes != null && bytes.size in 19..MAX_BYTES) { "Invalid bridge message length" }
             try {

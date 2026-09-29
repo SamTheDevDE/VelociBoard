@@ -2,20 +2,10 @@ package de.samthedev.velociboard
 
 import net.kyori.adventure.text.Component
 
-data class BoardDiff(val titleChanged: Boolean, val removed: List<Int>, val updated: List<LineUpdate>) {
-    fun titleChanged() = titleChanged
-    fun removed() = removed
-    fun updated() = updated
-
-    data class LineUpdate(val slot: Int, val score: Int, val textChanged: Boolean, val scoreChanged: Boolean) {
-        fun slot() = slot
-        fun score() = score
-        fun textChanged() = textChanged
-        fun scoreChanged() = scoreChanged
-    }
+internal data class BoardDiff(val titleChanged: Boolean, val removed: List<Int>, val updated: List<LineUpdate>) {
+    data class LineUpdate(val slot: Int, val score: Int, val textChanged: Boolean, val scoreChanged: Boolean)
 
     companion object {
-        @JvmStatic
         fun between(oldTitle: Component?, oldLines: List<Component>?, title: Component, lines: List<Component>): BoardDiff {
             val oldSize = oldLines?.size ?: 15
             val removed = (lines.size until oldSize).toList()
@@ -28,7 +18,6 @@ data class BoardDiff(val titleChanged: Boolean, val removed: List<Int>, val upda
             return BoardDiff(oldTitle != title, removed, updated)
         }
 
-        @JvmStatic
         fun holder(slot: Int) = "vb_$slot"
     }
 }

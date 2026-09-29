@@ -4,12 +4,7 @@ import com.velocitypowered.api.proxy.Player
 import net.kyori.adventure.text.Component
 import java.math.BigDecimal
 
-data class Condition(val placeholder: String, val operator: String, val expected: String, val number: BigDecimal?) {
-    fun placeholder() = placeholder
-    fun operator() = operator
-    fun expected() = expected
-    fun number() = number
-
+internal data class Condition(val placeholder: String, val operator: String, val expected: String, val number: BigDecimal?) {
     fun matches(player: Player, placeholders: PlaceholderRegistry, resolved: MutableMap<String, Component>): Boolean {
         val actual = placeholders.resolveText(player, placeholder, resolved) ?: return false
         val actualNumber = actual.toBigDecimalOrNull()
@@ -29,7 +24,6 @@ data class Condition(val placeholder: String, val operator: String, val expected
     companion object {
         private val expression = Regex("^%([a-z][a-z0-9_]*)%\\s*(==|!=|>=|<=|>|<)\\s*(.+)$")
 
-        @JvmStatic
         fun parse(text: String, location: String): Condition {
             val match = expression.matchEntire(text.trim())
                 ?: throw IllegalArgumentException("$location: expected '%placeholder% operator value'")

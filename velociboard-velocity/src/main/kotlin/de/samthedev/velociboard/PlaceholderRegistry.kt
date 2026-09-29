@@ -16,7 +16,7 @@ import java.util.function.Function
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
-class PlaceholderRegistry(private val onChange: Consumer<UUID>) {
+internal class PlaceholderRegistry(private val onChange: Consumer<UUID>) {
     private val miniMessage = MiniMessage.miniMessage()
     private val immediate = HashMap<String, Function<Player, Component>>()
     private val cached = HashMap<String, CachedPlaceholder>()

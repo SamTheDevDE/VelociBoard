@@ -11,7 +11,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
-class PreferenceStore(private val database: Path, private val logger: Logger) {
+internal class PreferenceStore(private val database: Path, private val logger: Logger) {
     private val worker = Executors.newSingleThreadExecutor {
         Thread.ofPlatform().name("velociboard-preferences").unstarted(it)
     }

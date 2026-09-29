@@ -12,7 +12,7 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.Consumer
 
-class BackendBridge(private val proxy: ProxyServer, private val logger: Logger, private val onChange: Consumer<UUID>) {
+internal class BackendBridge(private val proxy: ProxyServer, private val logger: Logger, private val onChange: Consumer<UUID>) {
     private val channel = MinecraftChannelIdentifier.from(BridgeMessage.CHANNEL)
     private val values = ConcurrentHashMap<UUID, State>()
     private val warnedServers = ConcurrentHashMap.newKeySet<String>()

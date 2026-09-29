@@ -8,11 +8,9 @@ import net.luckperms.api.LuckPermsProvider
 import net.luckperms.api.model.user.User
 import java.time.Duration
 
-object LuckPermsPlaceholders {
-    @JvmStatic
+internal object LuckPermsPlaceholders {
     fun install(placeholders: PlaceholderRegistry) = install(placeholders, LuckPermsProvider.get())
 
-    @JvmStatic
     fun install(placeholders: PlaceholderRegistry, luckPerms: LuckPerms) {
         placeholders.registerPolledComponent("luckperms_prefix", Duration.ofSeconds(1)) { player ->
             format(read(luckPerms, player) { it.cachedData.metaData.prefix })
