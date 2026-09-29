@@ -20,6 +20,8 @@ The Velocity and Paper jars are written to `velociboard-velocity/build/libs/` an
 
 Install VelocityScoreboardAPI and VelociBoard in the Velocity proxy's `plugins/` directory, then restart the proxy. VelociBoard creates `plugins/velociboard/config.yml`, `animations.yml`, and example files in `plugins/velociboard/scoreboards/` on first startup. Edit the files and run `/velociboard reload` to read them again. Reload requires `velociboard.reload`.
 
+Players can use `/velociboard toggle` or `/scoreboard` with the `velociboard.toggle` permission. Their choice is saved to `plugins/velociboard/preferences.db` and loaded asynchronously when they join.
+
 `config.yml` contains the global switch:
 
 ```yaml

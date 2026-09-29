@@ -9,6 +9,12 @@ build/
 run/
 server/
 test-server/
+plugins/
+*.db
+*.db-shm
+*.db-wal
+eula.txt
+velocity.toml
 logs/
 *.log
 .DS_Store

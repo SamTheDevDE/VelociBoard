@@ -10,6 +10,7 @@ dependencies {
     compileOnly("net.william278:velocityscoreboardapi:2.1.1")
     compileOnly("net.luckperms:api:5.5")
     implementation("org.yaml:snakeyaml:2.7")
+    implementation("org.xerial:sqlite-jdbc:3.53.4.0")
     testImplementation("org.junit.jupiter:junit-jupiter:5.13.4")
     testImplementation("com.velocitypowered:velocity-api:4.2.1-SNAPSHOT")
     testImplementation("net.luckperms:api:5.5")

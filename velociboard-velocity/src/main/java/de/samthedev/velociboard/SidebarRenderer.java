@@ -14,18 +14,25 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Predicate;
 import net.kyori.adventure.text.Component;
 
 final class SidebarRenderer {
     private static final String OBJECTIVE_NAME = "velociboard";
     private final PlaceholderRegistry placeholders;
+    private final Predicate<Player> visible;
     private final Map<UUID, RenderedBoard> rendered = new HashMap<>();
 
-    SidebarRenderer(PlaceholderRegistry placeholders) {
+    SidebarRenderer(PlaceholderRegistry placeholders, Predicate<Player> visible) {
         this.placeholders = placeholders;
+        this.visible = visible;
     }
 
     synchronized void refresh(Player player, BoardConfig config) {
+        if (!visible.test(player)) {
+            remove(player);
+            return;
+        }
         String serverName = player.getCurrentServer()
                 .map(connection -> connection.getServer().getServerInfo().getName())
                 .orElse("unknown");
