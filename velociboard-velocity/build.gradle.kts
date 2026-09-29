@@ -11,7 +11,6 @@ kotlin {
 dependencies {
     implementation(project(":velociboard-api"))
     compileOnly("com.velocitypowered:velocity-api:4.2.1-SNAPSHOT")
-    annotationProcessor("com.velocitypowered:velocity-api:4.2.1-SNAPSHOT")
     compileOnly("net.william278:velocityscoreboardapi:2.1.1")
     compileOnly("net.luckperms:api:5.5")
     implementation("org.yaml:snakeyaml:2.7")
@@ -23,21 +22,10 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
-val pluginVersion = project.version.toString()
-val generateVersion = tasks.register("generateVersion") {
-    val output = layout.buildDirectory.dir("generated/sources/version/java")
-    inputs.property("pluginVersion", pluginVersion)
-    outputs.dir(output)
-    doLast {
-        val file = output.get().file("de/samthedev/velociboard/BuildVersion.java").asFile
-        file.parentFile.mkdirs()
-        file.writeText("package de.samthedev.velociboard;\n\nfinal class BuildVersion {\n"
-                + "    static final String VALUE = \"$pluginVersion\";\n}\n")
+tasks.processResources {
+    filesMatching("velocity-plugin.json") {
+        expand("version" to project.version)
     }
-}
-
-sourceSets.main {
-    java.srcDir(generateVersion)
 }
 
 tasks.shadowJar {

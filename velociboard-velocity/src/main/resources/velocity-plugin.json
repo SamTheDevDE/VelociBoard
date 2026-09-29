@@ -1,0 +1,12 @@
+{
+  "id": "velociboard",
+  "name": "VelociBoard",
+  "version": "${version}",
+  "description": "Sidebar scoreboards for Velocity networks",
+  "authors": ["SamTheDevDE"],
+  "dependencies": [
+    {"id": "velocity-scoreboard-api", "optional": false},
+    {"id": "luckperms", "optional": true}
+  ],
+  "main": "de.samthedev.velociboard.VelociBoard"
+}
