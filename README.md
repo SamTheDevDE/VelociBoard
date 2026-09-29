@@ -2,9 +2,23 @@
 
 VelociBoard is a sidebar scoreboard plugin for Velocity networks. The proxy owns the scoreboard. A small Paper/Folia bridge is available if you want backend values.
 
-This project is in early development. The current build displays proxy sidebars with MiniMessage formatting and native placeholders. It selects boards by backend server and priority, updates on server switches, and supports `/velociboard reload`.
+This project is in early development. The current build displays proxy sidebars with MiniMessage formatting and native placeholders. It selects boards by backend server and priority, updates on server switches, and saves player toggle preferences.
 
 Velocity does not expose scoreboard packets through its public API. For now, VelociBoard uses [VelocityScoreboardAPI](https://github.com/NEZNAMY/VelocityScoreboardAPI) to send them. VelociBoard does not require VelociTab. Sidebar lines require a Minecraft 1.20.3 or newer client.
+
+## Requirements
+
+- Modern Velocity with Java 25 or newer (built against Velocity API 4.2.1-SNAPSHOT)
+- VelocityScoreboardAPI 2.1.1 on the proxy
+- Minecraft 1.20.3 or newer clients for sidebar lines
+- Optional: LuckPerms 5.5 on the proxy
+- Optional bridge: Paper or Folia 26.2 or newer with Java 25 or newer
+
+The build targets current Velocity and Paper APIs. Older proxy, backend, and client versions have not been verified.
+
+## Screenshots
+
+No screenshots yet. The example board is in `velociboard-velocity/src/main/resources/scoreboards/`.
 
 ## Build
 
@@ -127,3 +141,7 @@ api.showBoard(player, "lobby");
 `registerCached` accepts an asynchronous resolver and a refresh interval. It keeps the last result while a refresh runs. Fast `register` resolvers may run while rendering, so read local state there. Remove your placeholders with `api.placeholders().unregister(name)` when your plugin stops. `showBoard` and `hideBoard` apply until the player changes server or disconnects; they do not change the saved toggle preference.
 
 If you used the earlier single-board config, VelociBoard copies its title and lines into `scoreboards/default.yml` when the directory is first created. The old entries in `config.yml` can then be removed.
+
+## Contributing
+
+Issues and pull requests are welcome. Run `./gradlew build` before opening a pull request. Include the Velocity, Paper/Folia, and client versions when reporting a bug. See [CONTRIBUTING.md](CONTRIBUTING.md) for the short development notes.

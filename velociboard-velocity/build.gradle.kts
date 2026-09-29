@@ -18,6 +18,23 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
+val pluginVersion = project.version.toString()
+val generateVersion = tasks.register("generateVersion") {
+    val output = layout.buildDirectory.dir("generated/sources/version/java")
+    inputs.property("pluginVersion", pluginVersion)
+    outputs.dir(output)
+    doLast {
+        val file = output.get().file("de/samthedev/velociboard/BuildVersion.java").asFile
+        file.parentFile.mkdirs()
+        file.writeText("package de.samthedev.velociboard;\n\nfinal class BuildVersion {\n"
+                + "    static final String VALUE = \"$pluginVersion\";\n}\n")
+    }
+}
+
+sourceSets.main {
+    java.srcDir(generateVersion)
+}
+
 tasks.shadowJar {
     archiveFileName.set("VelociBoard-Velocity-${project.version}.jar")
     relocate("org.yaml.snakeyaml", "de.samthedev.velociboard.lib.snakeyaml")

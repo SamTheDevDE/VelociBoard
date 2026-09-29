@@ -36,7 +36,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.slf4j.Logger;
 
-@Plugin(id = "velociboard", name = "VelociBoard", version = "0.1.0-SNAPSHOT",
+@Plugin(id = "velociboard", name = "VelociBoard", version = BuildVersion.VALUE,
         description = "Sidebar scoreboards for Velocity networks", authors = {"SamTheDevDE"},
         dependencies = {@Dependency(id = "velocity-scoreboard-api"), @Dependency(id = "luckperms", optional = true)})
 public final class VelociBoard {
