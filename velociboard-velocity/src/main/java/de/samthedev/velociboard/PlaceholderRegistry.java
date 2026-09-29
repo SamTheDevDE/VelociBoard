@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -25,9 +26,14 @@ public final class PlaceholderRegistry {
     private final Map<String, CachedPlaceholder> cached = new HashMap<>();
     private final Map<String, PolledPlaceholder> polled = new HashMap<>();
     private final Consumer<UUID> onChange;
+    private BiFunction<Player, String, String> backendResolver;
 
     PlaceholderRegistry(Consumer<UUID> onChange) {
         this.onChange = onChange;
+    }
+
+    synchronized void setBackendResolver(BiFunction<Player, String, String> resolver) {
+        backendResolver = Objects.requireNonNull(resolver);
     }
 
     public synchronized void register(String name, Function<Player, String> resolver) {
@@ -129,7 +135,10 @@ public final class PlaceholderRegistry {
             if (cached.containsKey(name)) {
                 return Component.text(cached.get(name).get(player));
             }
-            return polled.get(name).get(player.getUniqueId());
+            if (polled.containsKey(name)) {
+                return polled.get(name).get(player.getUniqueId());
+            }
+            return Component.text(Objects.toString(backendResolver.apply(player, name.substring(8)), ""));
         });
     }
 
@@ -143,7 +152,8 @@ public final class PlaceholderRegistry {
     }
 
     private boolean contains(String name) {
-        return immediate.containsKey(name) || cached.containsKey(name) || polled.containsKey(name);
+        return immediate.containsKey(name) || cached.containsKey(name) || polled.containsKey(name)
+                || (backendResolver != null && name.startsWith("backend_") && name.length() > 8);
     }
 
     private static void checkName(String name) {

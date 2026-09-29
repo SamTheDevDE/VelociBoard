@@ -2,6 +2,7 @@ package de.samthedev.velociboard.paper;
 
 import de.samthedev.velociboard.bridge.BridgeMessage;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,6 +18,7 @@ public final class VelociBoardPaper extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
+        VelociBoardBridge.attach(this);
         getServer().getMessenger().registerOutgoingPluginChannel(this, BridgeMessage.CHANNEL);
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getGlobalRegionScheduler().runAtFixedRate(this, task -> {
@@ -29,6 +31,7 @@ public final class VelociBoardPaper extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
+        VelociBoardBridge.detach();
         getServer().getMessenger().unregisterOutgoingPluginChannel(this, BridgeMessage.CHANNEL);
         lastSent.clear();
     }
@@ -36,9 +39,10 @@ public final class VelociBoardPaper extends JavaPlugin implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         lastSent.remove(event.getPlayer().getUniqueId());
+        VelociBoardBridge.forget(event.getPlayer().getUniqueId());
     }
 
-    private void sendSnapshot(Player player) {
+    void sendSnapshot(Player player) {
         if (!player.isOnline()) {
             return;
         }
@@ -48,11 +52,11 @@ public final class VelociBoardPaper extends JavaPlugin implements Listener {
                 || world.chars().anyMatch(Character::isISOControl)) {
             world = "unknown";
         }
-        Map<String, String> values = Map.of(
-                "world", world,
-                "x", Integer.toString(location.getBlockX()),
-                "y", Integer.toString(location.getBlockY()),
-                "z", Integer.toString(location.getBlockZ()));
+        Map<String, String> values = new HashMap<>(VelociBoardBridge.snapshot(player));
+        values.put("world", world);
+        values.put("x", Integer.toString(location.getBlockX()));
+        values.put("y", Integer.toString(location.getBlockY()));
+        values.put("z", Integer.toString(location.getBlockZ()));
         UUID id = player.getUniqueId();
         Snapshot previous = lastSent.get(id);
         long now = System.nanoTime();

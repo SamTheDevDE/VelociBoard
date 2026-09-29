@@ -46,6 +46,7 @@ public final class VelociBoard {
         this.placeholders = new PlaceholderRegistry(this::refreshPlayer);
         this.renderer = new SidebarRenderer(placeholders);
         this.bridge = new BackendBridge(proxy, logger, this::refreshPlayer);
+        placeholders.setBackendResolver(bridge::value);
         placeholders.register("player_name", Player::getUsername);
         placeholders.register("player_uuid", player -> player.getUniqueId().toString());
         placeholders.register("server_name", player -> player.getCurrentServer()
@@ -55,10 +56,6 @@ public final class VelociBoard {
         placeholders.registerPolled("network_online", Duration.ofSeconds(1),
                 player -> Integer.toString(proxy.getPlayerCount()));
         placeholders.registerPolled("ping", Duration.ofSeconds(5), player -> Long.toString(player.getPing()));
-        placeholders.register("backend_world", player -> bridge.value(player, "world"));
-        placeholders.register("backend_x", player -> bridge.value(player, "x"));
-        placeholders.register("backend_y", player -> bridge.value(player, "y"));
-        placeholders.register("backend_z", player -> bridge.value(player, "z"));
     }
 
     @Subscribe

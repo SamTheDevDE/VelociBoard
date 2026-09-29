@@ -73,4 +73,14 @@ class PlaceholderRegistryTest {
         assertEquals("1 1", plain.serialize(placeholders.render(player, "%name% %name%", new HashMap<>())));
         assertEquals(1, calls.get());
     }
+
+    @Test
+    void resolvesBackendValuesUnderTheirOwnPrefix() {
+        Player player = mock(Player.class);
+        PlaceholderRegistry placeholders = new PlaceholderRegistry(ignored -> {});
+        placeholders.setBackendResolver((ignored, name) -> name.equals("economy_balance") ? "42" : "");
+
+        assertEquals("42", plain.serialize(placeholders.render(player, "%backend_economy_balance%")));
+        assertEquals("%unknown%", plain.serialize(placeholders.render(player, "%unknown%")));
+    }
 }

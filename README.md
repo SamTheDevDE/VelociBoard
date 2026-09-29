@@ -91,4 +91,13 @@ The bridge is optional. Put `VelociBoard-Paper-*.jar` in a Paper or Folia server
 
 Use `%backend_world%`, `%backend_x%`, `%backend_y%`, and `%backend_z%` in board files. They are empty until the backend sends a value. The bridge sends changed values once per second and a small heartbeat every ten seconds. Velocity checks the message size, format, player UUID, and sending server before accepting it.
 
+Other Paper plugins can register up to 12 more values. Add `VelociBoardPaper` as a dependency in your plugin's `plugin.yml` and compile against the Paper jar:
+
+```java
+VelociBoardBridge.registerPlaceholder("economy_balance", player -> cachedBalance(player.getUniqueId()));
+VelociBoardBridge.refresh(player); // Call after an event changes the balance.
+```
+
+Use `%backend_economy_balance%` on Velocity. The synchronous provider runs on the player's entity thread and should only read local, fast data. For database-backed data, use `registerAsyncPlaceholder(name, refreshInterval, uuid -> completionStage)`; VelociBoard caches its latest result and never waits for it while gathering a snapshot. Call `unregisterPlaceholder(name)` when the owning plugin disables. Values are limited to 256 UTF-8 bytes.
+
 If you used the earlier single-board config, VelociBoard copies its title and lines into `scoreboards/default.yml` when the directory is first created. The old entries in `config.yml` can then be removed.
