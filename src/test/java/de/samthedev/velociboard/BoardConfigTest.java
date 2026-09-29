@@ -28,4 +28,20 @@ class BoardConfigTest {
         Files.writeString(file, "enabled: nope\n");
         assertThrows(IllegalArgumentException.class, () -> BoardConfig.load(directory));
     }
+
+    @Test
+    void readsSidebarLines() throws Exception {
+        Files.writeString(directory.resolve("config.yml"), """
+                enabled: true
+                title: "<gold>Test"
+                lines:
+                  - ""
+                  - "<gray>%player_name%"
+                  - ""
+                """);
+        BoardConfig config = BoardConfig.load(directory);
+        assertTrue(config.enabled());
+        assertTrue(config.lines().get(0).isEmpty());
+        assertTrue(config.lines().get(2).isEmpty());
+    }
 }

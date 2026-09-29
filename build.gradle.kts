@@ -6,11 +6,13 @@ plugins {
 repositories {
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")
+    maven("https://repo.william278.net/releases/")
 }
 
 dependencies {
     compileOnly("com.velocitypowered:velocity-api:4.2.1-SNAPSHOT")
     annotationProcessor("com.velocitypowered:velocity-api:4.2.1-SNAPSHOT")
+    compileOnly("net.william278:velocityscoreboardapi:2.1.1")
     implementation("org.yaml:snakeyaml:2.7")
     testImplementation("org.junit.jupiter:junit-jupiter:5.13.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
