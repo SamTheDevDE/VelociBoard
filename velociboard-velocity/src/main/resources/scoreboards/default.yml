@@ -1,11 +1,14 @@
 enabled: true
 priority: 0
-
-title: "<animation:title>"
+title: "<gradient:#8b5cf6:#c084fc><bold>TORUSMC</bold></gradient>"
 lines:
+  - "<gray>Server <white>%server_name%"
+  - "<gray>Player <white>%player_name%"
+  - text: "<gray>Rank <white>%luckperms_prefix%"
+    condition: "%luckperms_prefix% != ''"
+  - text: "<gray>Rank <white>Member"
+    condition: "%luckperms_prefix% == ''"
+  - "<gray>Network <white>%network_online%"
+  - "<gray>Ping <white>%ping%ms"
   - ""
-  - "<gray>Player"
-  - "<white>%player_name%"
-  - ""
-  - "<gray>Server"
-  - "<white>%server_name%"
+  - "<dark_gray>play.torusmc.com"

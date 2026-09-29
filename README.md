@@ -18,7 +18,7 @@ The build targets current Velocity and Paper APIs. Older proxy, backend, and cli
 
 ## Screenshots
 
-No screenshots yet. The example board is in `velociboard-velocity/src/main/resources/scoreboards/`.
+No screenshots yet. The bundled TorusMC boards are in `velociboard-velocity/src/main/resources/scoreboards/`.
 
 ## Build
 
@@ -32,9 +32,9 @@ The Velocity and Paper jars are written to `velociboard-velocity/build/libs/` an
 
 ## Install
 
-Install VelocityScoreboardAPI and VelociBoard in the Velocity proxy's `plugins/` directory, then restart the proxy. VelociBoard creates `plugins/velociboard/config.yml`, `animations.yml`, and example files in `plugins/velociboard/scoreboards/` on first startup. Edit the files and run `/velociboard reload` to read them again. Reload requires `velociboard.reload`.
+Install VelocityScoreboardAPI and VelociBoard in the Velocity proxy's `plugins/` directory, then restart the proxy. VelociBoard creates `plugins/velociboard/config.yml`, `animations.yml`, and the TorusMC board files in `plugins/velociboard/scoreboards/` on first startup. Edit the files and run `/velociboard reload` to read them again. Reload requires `velociboard.reload`.
 
-Existing generated files are kept during upgrades. If an older `animations.yml` or board file contains `<purple>`, replace it with the valid MiniMessage color `<light_purple>` (and `</light_purple>` for a closing tag), then reload VelociBoard. Other standard MiniMessage tags such as `<gray>`, `<white>`, and `<bold>` are supported.
+Existing generated files are kept during upgrades. On an existing installation, copy the desired files from `velociboard-velocity/src/main/resources/scoreboards/` to `plugins/velociboard/scoreboards/` and update `config.yml` manually. Remove old boards that would still match with a higher priority. If an older file contains `<purple>`, replace it with the valid MiniMessage color `<light_purple>`.
 
 If Velocitab is installed on the same proxy, set `send_scoreboard_packets: false` in `plugins/velocitab/config.yml` and restart the proxy. Velocitab otherwise registers `UpdateTeamsPacket` at the same packet IDs as VelocityScoreboardAPI, causing its initialization to fail with `another packet is already registered`. This setting disables Velocitab's team packet features, including player list sorting and nametag formatting. Velocitab's other tab list features can still be used. If you need those team features, the two packet owners cannot currently run together on the same proxy.
 
@@ -51,37 +51,44 @@ Players can use `/velociboard toggle` or `/scoreboard` with the `velociboard.tog
 | `placeholders` | `velociboard.admin` | List registered proxy placeholders |
 | `debug` | `velociboard.debug` | Inspect your board, values, and bridge state |
 
-`config.yml` contains the global switch:
+`config.yml` contains the global switch and refresh intervals in milliseconds:
 
 ```yaml
 enabled: true
 placeholder-refresh:
-  server_online: 1000
-  network_online: 1000
+  server_online: 2000
+  network_online: 2000
   ping: 5000
-  luckperms_prefix: 1000
-  luckperms_suffix: 1000
-  luckperms_primary_group: 1000
+  luckperms_prefix: 5000
+  luckperms_suffix: 10000
+  luckperms_primary_group: 10000
 ```
 
-Each `.yml` file in `scoreboards/` defines a board. An empty or omitted `servers` list matches every server. The highest priority matching board wins; ties use the filename in alphabetical order. For example, `scoreboards/lobby.yml` can contain:
+Each `.yml` file in `scoreboards/` defines a board. An empty or omitted `servers` list matches every server. The highest priority matching board wins; ties use the filename in alphabetical order. Bundled TorusMC boards use the backend names below:
+
+| File | Backend server names | Priority |
+| --- | --- | ---: |
+| `lobby.yml` | `lobby` | 100 |
+| `survival.yml` | `survival` | 100 |
+| `hardcore.yml` | `hardcore` | 100 |
+| `builder.yml` | `builder` | 100 |
+| `queue.yml` | `limbo`, `queue` | 100 |
+| `default.yml` | Any other server | 0 |
+
+The sidebar switches after each backend connection. To add a server, copy a board file, set `servers` to the exact Velocity server name, and reload. For example:
 
 ```yaml
 enabled: true
-servers:
-  - lobby
+servers: [event]
 priority: 100
-title: "<light_purple><bold>VelociBoard</bold></light_purple>"
+title: "<gradient:#8b5cf6:#c084fc><bold>TORUSMC</bold></gradient>"
 lines:
-  - ""
-  - "<gray>Player"
-  - "<white>%player_name%"
-  - ""
-  - "<gray>Server"
-  - "<white>%server_name%"
+  - "<gray>Server <white>%server_name%"
+  - "<gray>Player <white>%player_name%"
+  - "<dark_gray>play.torusmc.com"
 ```
 
-At most 15 lines are supported. Repeated visible lines, including empty lines, work without adding spaces to make them unique.
+At most 15 lines are supported. The bundled boards use a static title and no animations. Repeated visible lines, including empty lines, work without adding spaces to make them unique.
 
 Use `<animation:name>` in a board title or line to display an animation from `animations.yml`:
 
@@ -104,15 +111,17 @@ condition: "%server_name% == lobby"
 permission: velociboard.view.lobby
 lines:
   - "<gray>Welcome"
-  - text: "<red>Queue: %queue_position%"
-    condition: "%queue_position% > 0"
+  - text: "<red>High ping"
+    condition: "%ping% > 150"
   - text: "<gold>Staff online"
     permission: velociboard.staff
 ```
 
 Condition and permission changes are checked once per second. A line that no longer matches is removed without rebuilding the objective.
 
-Native placeholders: `%player_name%`, `%player_uuid%`, `%server_name%`, `%server_online%`, `%network_online%`, and `%ping%`. Unknown placeholders remain visible so typos are easier to spot. The refresh values are milliseconds; counts and ping use cached values and one shared refresh task. Player name, UUID, and server name update on join or server switch.
+Placeholder syntax is `%name%` in board text and conditions. Built-in placeholders are `%player_name%`, `%player_uuid%`, `%server_name%`, `%server_online%`, `%network_online%`, and `%ping%`. LuckPerms provides `%luckperms_prefix%`, `%luckperms_suffix%`, and `%luckperms_primary_group%` when installed on Velocity. The optional Paper bridge provides `%backend_world%`, `%backend_x%`, `%backend_y%`, and `%backend_z%`; other `%backend_<name>%` values require a Paper plugin to register that name. Proxy plugins can also register their own names through the Velocity API. There is no built-in PlaceholderAPI, MiniPlaceholders, AJQueue, economy, team, claim, or playtime hook. Unknown placeholders remain visible so typos are easier to spot.
+
+The bundled boards conditionally show a LuckPerms prefix, or `Member` when it is unavailable. Builder shows the world only when the Paper bridge supplies it. Survival leaves a commented balance example until a Paper plugin registers `economy_balance`; queue uses a static waiting message until a queue plugin registers real values. Counts and ping use cached values and one shared refresh task. Player name, UUID, and server name update on join or server switch.
 
 If LuckPerms is installed on Velocity, `%luckperms_prefix%`, `%luckperms_suffix%`, and `%luckperms_primary_group%` read its loaded user data. Prefix and suffix colors in legacy `&` or `§` format are supported. These placeholders show an empty value when LuckPerms is absent or the user has no value. VelociBoard does not query LuckPerms storage while rendering.
 

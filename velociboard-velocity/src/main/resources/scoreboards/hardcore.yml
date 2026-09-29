@@ -1,15 +1,15 @@
 enabled: true
-servers: [lobby]
+servers: [hardcore]
 priority: 100
 title: "<gradient:#8b5cf6:#c084fc><bold>TORUSMC</bold></gradient>"
 lines:
-  - "<gray>Server <white>Lobby"
+  - "<gray>Server <white>Hardcore"
   - "<gray>Player <white>%player_name%"
   - text: "<gray>Rank <white>%luckperms_prefix%"
     condition: "%luckperms_prefix% != ''"
   - text: "<gray>Rank <white>Member"
     condition: "%luckperms_prefix% == ''"
-  - "<gray>Network <white>%network_online%"
+  - "<gray>Online <white>%server_online%"
   - "<gray>Ping <white>%ping%ms"
   - ""
   - "<dark_gray>play.torusmc.com"

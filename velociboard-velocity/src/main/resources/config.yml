@@ -1,9 +1,9 @@
 enabled: true
 
 placeholder-refresh:
-  server_online: 1000
-  network_online: 1000
+  server_online: 2000
+  network_online: 2000
   ping: 5000
-  luckperms_prefix: 1000
-  luckperms_suffix: 1000
-  luckperms_primary_group: 1000
+  luckperms_prefix: 5000
+  luckperms_suffix: 10000
+  luckperms_primary_group: 10000

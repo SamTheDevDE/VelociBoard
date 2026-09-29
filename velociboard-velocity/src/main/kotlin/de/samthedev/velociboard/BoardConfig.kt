@@ -71,10 +71,13 @@ internal data class BoardConfig(
                         "lines" to global["lines"],
                     )
                     Files.newBufferedWriter(boardsDirectory.resolve("default.yml")).use { Yaml().dump(migrated, it) }
+                    copyResource("scoreboards/lobby.yml", boardsDirectory.resolve("lobby.yml"))
                 } else {
                     copyResource("scoreboards/default.yml", boardsDirectory.resolve("default.yml"))
+                    for (name in listOf("lobby", "survival", "hardcore", "builder", "queue")) {
+                        copyResource("scoreboards/$name.yml", boardsDirectory.resolve("$name.yml"))
+                    }
                 }
-                copyResource("scoreboards/lobby.yml", boardsDirectory.resolve("lobby.yml"))
             }
             require(Files.isDirectory(boardsDirectory)) { "scoreboards: must be a directory" }
             val boards = Files.list(boardsDirectory).use { files ->
