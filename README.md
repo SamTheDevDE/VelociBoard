@@ -2,7 +2,7 @@
 
 VelociBoard is a sidebar scoreboard plugin for Velocity networks. The proxy owns the scoreboard; backend servers do not need to install it.
 
-This project is in early development. The current build displays one sidebar with MiniMessage formatting and `%player_name%` and `%server_name%` placeholders. It updates on server switches and supports `/velociboard reload`.
+This project is in early development. The current build displays proxy sidebars with MiniMessage formatting and `%player_name%` and `%server_name%` placeholders. It selects boards by backend server and priority, updates on server switches, and supports `/velociboard reload`.
 
 Velocity does not expose scoreboard packets through its public API. For now, VelociBoard uses [VelocityScoreboardAPI](https://github.com/NEZNAMY/VelocityScoreboardAPI) to send them. VelociBoard does not require VelociTab. Sidebar lines require a Minecraft 1.20.3 or newer client.
 
@@ -18,10 +18,21 @@ The plugin jar is written to `build/libs/`.
 
 ## Install
 
-Install VelocityScoreboardAPI and VelociBoard in the Velocity proxy's `plugins/` directory, then restart the proxy. VelociBoard creates `plugins/velociboard/config.yml` on first startup. Edit the file and run `/velociboard reload` to read it again. Reload requires `velociboard.reload`.
+Install VelocityScoreboardAPI and VelociBoard in the Velocity proxy's `plugins/` directory, then restart the proxy. VelociBoard creates `plugins/velociboard/config.yml` and example files in `plugins/velociboard/scoreboards/` on first startup. Edit the files and run `/velociboard reload` to read them again. Reload requires `velociboard.reload`.
+
+`config.yml` contains the global switch:
 
 ```yaml
 enabled: true
+```
+
+Each `.yml` file in `scoreboards/` defines a board. An empty or omitted `servers` list matches every server. The highest priority matching board wins; ties use the filename in alphabetical order. For example, `scoreboards/lobby.yml` can contain:
+
+```yaml
+enabled: true
+servers:
+  - lobby
+priority: 100
 title: "<purple><bold>VelociBoard</bold></purple>"
 lines:
   - ""
@@ -33,3 +44,5 @@ lines:
 ```
 
 At most 15 lines are supported.
+
+If you used the earlier single-board config, VelociBoard copies its title and lines into `scoreboards/default.yml` when the directory is first created. The old entries in `config.yml` can then be removed.

@@ -4,51 +4,92 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 import org.yaml.snakeyaml.error.YAMLException;
 
-record BoardConfig(boolean enabled, String title, List<String> lines) {
-    private static final String DEFAULT_TITLE = "<purple><bold>VelociBoard</bold></purple>";
-    private static final List<String> DEFAULT_LINES = List.of(
-            "", "<gray>Player", "<white>%player_name%", "", "<gray>Server", "<white>%server_name%");
-
+record BoardConfig(boolean enabled, List<BoardDefinition> boards) {
     static BoardConfig load(Path dataDirectory) throws IOException {
         Files.createDirectories(dataDirectory);
-        Path file = dataDirectory.resolve("config.yml");
-        if (Files.notExists(file)) {
-            try (InputStream defaultConfig = BoardConfig.class.getResourceAsStream("/config.yml")) {
-                if (defaultConfig == null) {
-                    throw new IOException("Bundled config.yml is missing");
-                }
-                Files.copy(defaultConfig, file);
-            }
+        Path globalFile = dataDirectory.resolve("config.yml");
+        if (Files.notExists(globalFile)) {
+            copyResource("config.yml", globalFile);
+        }
+        Map<?, ?> global = readYaml(globalFile);
+        Object enabled = global.get("enabled");
+        if (!(enabled instanceof Boolean active)) {
+            throw new IllegalArgumentException("config.yml: 'enabled' must be true or false");
         }
 
+        Path boardsDirectory = dataDirectory.resolve("scoreboards");
+        if (Files.notExists(boardsDirectory)) {
+            Files.createDirectories(boardsDirectory);
+            if (global.containsKey("title") || global.containsKey("lines")) {
+                Map<String, Object> migrated = new LinkedHashMap<>();
+                migrated.put("enabled", true);
+                migrated.put("priority", 0);
+                migrated.put("title", global.get("title"));
+                migrated.put("lines", global.get("lines"));
+                try (var output = Files.newBufferedWriter(boardsDirectory.resolve("default.yml"))) {
+                    new Yaml().dump(migrated, output);
+                }
+            } else {
+                copyResource("scoreboards/default.yml", boardsDirectory.resolve("default.yml"));
+            }
+            copyResource("scoreboards/lobby.yml", boardsDirectory.resolve("lobby.yml"));
+        }
+        if (!Files.isDirectory(boardsDirectory)) {
+            throw new IllegalArgumentException("scoreboards: must be a directory");
+        }
+
+        List<BoardDefinition> boards;
+        try (Stream<Path> files = Files.list(boardsDirectory)) {
+            boards = files.filter(file -> file.getFileName().toString().endsWith(".yml"))
+                    .sorted(Comparator.comparing(file -> file.getFileName().toString()))
+                    .map(file -> BoardDefinition.load(file, readYaml(file)))
+                    .toList();
+        }
+        return new BoardConfig(active, boards);
+    }
+
+    BoardDefinition select(String serverName) {
+        if (!enabled) {
+            return null;
+        }
+        return boards.stream().filter(board -> board.matches(serverName))
+                .max(Comparator.comparingInt(BoardDefinition::priority)
+                        .thenComparing(BoardDefinition::id, Comparator.reverseOrder()))
+                .orElse(null);
+    }
+
+    static Map<?, ?> readYaml(Path file) {
+        String name = file.getParent().getFileName().toString().equals("scoreboards")
+                ? "scoreboards/" + file.getFileName() : file.getFileName().toString();
         try (InputStream input = Files.newInputStream(file)) {
             Object parsed = new Yaml(new SafeConstructor(new LoaderOptions())).load(input);
             if (!(parsed instanceof Map<?, ?> values)) {
                 throw new IllegalArgumentException("root must be a mapping");
             }
-            Object enabled = values.get("enabled");
-            if (!(enabled instanceof Boolean value)) {
-                throw new IllegalArgumentException("'enabled' must be true or false");
+            return values;
+        } catch (IOException | YAMLException error) {
+            throw new IllegalArgumentException(name + ": " + error.getMessage(), error);
+        } catch (IllegalArgumentException error) {
+            throw new IllegalArgumentException(name + ": " + error.getMessage(), error);
+        }
+    }
+
+    private static void copyResource(String resource, Path destination) throws IOException {
+        try (InputStream input = BoardConfig.class.getResourceAsStream("/" + resource)) {
+            if (input == null) {
+                throw new IOException("Bundled " + resource + " is missing");
             }
-            Object title = values.containsKey("title") ? values.get("title") : DEFAULT_TITLE;
-            if (!(title instanceof String titleText)) {
-                throw new IllegalArgumentException("'title' must be text");
-            }
-            Object lines = values.containsKey("lines") ? values.get("lines") : DEFAULT_LINES;
-            if (!(lines instanceof List<?> entries) || entries.size() > 15
-                    || entries.stream().anyMatch(line -> !(line instanceof String))) {
-                throw new IllegalArgumentException("'lines' must be a list of up to 15 text entries");
-            }
-            return new BoardConfig(value, titleText, entries.stream().map(String.class::cast).toList());
-        } catch (YAMLException error) {
-            throw new IllegalArgumentException("invalid YAML: " + error.getMessage(), error);
+            Files.copy(input, destination);
         }
     }
 }

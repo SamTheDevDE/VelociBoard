@@ -1,0 +1,11 @@
+enabled: true
+priority: 0
+
+title: "<purple><bold>VelociBoard</bold></purple>"
+lines:
+  - ""
+  - "<gray>Player"
+  - "<white>%player_name%"
+  - ""
+  - "<gray>Server"
+  - "<white>%server_name%"

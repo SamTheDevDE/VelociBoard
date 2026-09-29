@@ -1,0 +1,11 @@
+enabled: true
+servers:
+  - lobby
+priority: 100
+
+title: "<purple><bold>LOBBY</bold></purple>"
+lines:
+  - ""
+  - "<gray>%player_name%"
+  - ""
+  - "<gray>Server: <white>%server_name%"

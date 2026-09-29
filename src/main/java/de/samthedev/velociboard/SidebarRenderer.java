@@ -24,7 +24,11 @@ final class SidebarRenderer {
     private final Map<UUID, RenderedBoard> rendered = new HashMap<>();
 
     synchronized void refresh(Player player, BoardConfig config) {
-        if (player.getProtocolVersion().lessThan(ProtocolVersion.MINECRAFT_1_20_3) || config == null || !config.enabled()) {
+        String serverName = player.getCurrentServer()
+                .map(connection -> connection.getServer().getServerInfo().getName())
+                .orElse("unknown");
+        BoardDefinition board = config == null ? null : config.select(serverName);
+        if (player.getProtocolVersion().lessThan(ProtocolVersion.MINECRAFT_1_20_3) || board == null) {
             remove(player);
             return;
         }
@@ -32,7 +36,7 @@ final class SidebarRenderer {
         ProxyScoreboard scoreboard = ScoreboardManager.getInstance().getProxyScoreboard(player);
         RenderedBoard previous = rendered.get(player.getUniqueId());
         ProxyObjective objective = scoreboard.getObjective(OBJECTIVE_NAME);
-        Component title = render(player, config.title());
+        Component title = render(player, serverName, board.title());
         if (objective == null) {
             objective = scoreboard.createObjective(OBJECTIVE_NAME, builder -> builder
                     .title(TextHolder.of(title))
@@ -43,9 +47,9 @@ final class SidebarRenderer {
             objective.setTitle(TextHolder.of(title));
         }
 
-        List<Component> lines = new ArrayList<>(config.lines().size());
-        for (String line : config.lines()) {
-            lines.add(render(player, line));
+        List<Component> lines = new ArrayList<>(board.lines().size());
+        for (String line : board.lines()) {
+            lines.add(render(player, serverName, line));
         }
         for (int index = 0; index < lines.size(); index++) {
             Component line = lines.get(index);
@@ -85,10 +89,7 @@ final class SidebarRenderer {
         rendered.remove(player.getUniqueId());
     }
 
-    private Component render(Player player, String text) {
-        String serverName = player.getCurrentServer()
-                .map(connection -> connection.getServer().getServerInfo().getName())
-                .orElse("unknown");
+    private Component render(Player player, String serverName, String text) {
         String template = text.replace("%player_name%", "<player_name>")
                 .replace("%server_name%", "<server_name>");
         return miniMessage.deserialize(template,

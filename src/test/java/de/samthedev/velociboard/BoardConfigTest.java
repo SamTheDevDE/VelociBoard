@@ -1,6 +1,8 @@
 package de.samthedev.velociboard;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -14,34 +16,70 @@ class BoardConfigTest {
     Path directory;
 
     @Test
-    void createsDefaultConfig() throws Exception {
-        assertTrue(BoardConfig.load(directory).enabled());
-        assertTrue(Files.exists(directory.resolve("config.yml")));
-    }
-
-    @Test
-    void readsAndValidatesEnabled() throws Exception {
-        Path file = directory.resolve("config.yml");
-        Files.writeString(file, "enabled: false\n");
-        assertFalse(BoardConfig.load(directory).enabled());
-
-        Files.writeString(file, "enabled: nope\n");
-        assertThrows(IllegalArgumentException.class, () -> BoardConfig.load(directory));
-    }
-
-    @Test
-    void readsSidebarLines() throws Exception {
-        Files.writeString(directory.resolve("config.yml"), """
-                enabled: true
-                title: "<gold>Test"
-                lines:
-                  - ""
-                  - "<gray>%player_name%"
-                  - ""
-                """);
+    void createsDefaultBoards() throws Exception {
         BoardConfig config = BoardConfig.load(directory);
         assertTrue(config.enabled());
-        assertTrue(config.lines().get(0).isEmpty());
-        assertTrue(config.lines().get(2).isEmpty());
+        assertEquals("default", config.select("survival").id());
+        assertEquals("lobby", config.select("lobby").id());
+        assertTrue(Files.exists(directory.resolve("scoreboards/default.yml")));
+    }
+
+    @Test
+    void migratesSingleBoardConfig() throws Exception {
+        Files.writeString(directory.resolve("config.yml"), """
+                enabled: true
+                title: "<gold>Old board"
+                lines:
+                  - "<gray>%player_name%"
+                """);
+        BoardConfig config = BoardConfig.load(directory);
+        assertEquals("<gold>Old board", config.select("survival").title());
+    }
+
+    @Test
+    void selectsHighestPriorityMatchingBoard() throws Exception {
+        BoardConfig.load(directory);
+        Path boards = directory.resolve("scoreboards");
+        Files.writeString(boards.resolve("survival.yml"), """
+                enabled: true
+                servers: [survival]
+                priority: 50
+                title: Survival
+                lines: [first]
+                """);
+        Files.writeString(boards.resolve("staff.yml"), """
+                enabled: true
+                servers: [survival]
+                priority: 200
+                title: Staff
+                lines: [second]
+                """);
+        BoardConfig config = BoardConfig.load(directory);
+        assertEquals("staff", config.select("survival").id());
+        assertEquals("default", config.select("other").id());
+    }
+
+    @Test
+    void validatesBoardFiles() throws Exception {
+        BoardConfig.load(directory);
+        Files.writeString(directory.resolve("scoreboards/lobby.yml"), """
+                enabled: true
+                servers: [lobby]
+                priority: high
+                title: Lobby
+                lines: [line]
+                """);
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> BoardConfig.load(directory));
+        assertTrue(error.getMessage().contains("scoreboards/lobby.yml: 'priority'"));
+    }
+
+    @Test
+    void disabledGlobalConfigHasNoBoard() throws Exception {
+        BoardConfig.load(directory);
+        Files.writeString(directory.resolve("config.yml"), "enabled: false\n");
+        BoardConfig config = BoardConfig.load(directory);
+        assertFalse(config.enabled());
+        assertNull(config.select("lobby"));
     }
 }
