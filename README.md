@@ -50,7 +50,7 @@ lines:
   - "<white>%server_name%"
 ```
 
-At most 15 lines are supported.
+At most 15 lines are supported. Repeated visible lines, including empty lines, work without adding spaces to make them unique.
 
 Use `<animation:name>` in a board title or line to display an animation from `animations.yml`:
 

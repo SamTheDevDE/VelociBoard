@@ -41,14 +41,13 @@ final class SidebarRenderer {
         RenderedBoard previous = rendered.get(player.getUniqueId());
         ProxyObjective objective = scoreboard.getObjective(OBJECTIVE_NAME);
         Component title = placeholders.render(player, config.animations().apply(board.title()), resolved);
+        boolean newObjective = objective == null;
         if (objective == null) {
             objective = scoreboard.createObjective(OBJECTIVE_NAME, builder -> builder
                     .title(TextHolder.of(title))
                     .displaySlot(DisplaySlot.SIDEBAR)
                     .numberFormat(NumberFormat.blank()));
             previous = null;
-        } else if (previous == null || !title.equals(previous.title())) {
-            objective.setTitle(TextHolder.of(title));
         }
 
         List<Component> lines = new ArrayList<>(board.lines().size());
@@ -57,27 +56,30 @@ final class SidebarRenderer {
                 lines.add(placeholders.render(player, config.animations().apply(line.text()), resolved));
             }
         }
-        for (int index = 0; index < lines.size(); index++) {
-            Component line = lines.get(index);
-            String holder = holder(index);
-            ProxyScore score = objective.getScore(holder);
-            int position = lines.size() - index;
-            if (score == null) {
-                objective.setScore(holder, builder -> builder.score(position)
-                        .displayName(line).numberFormat(NumberFormat.blank()));
-            } else {
-                if (score.getScore() != position) {
-                    score.setScore(position);
-                }
-                if (previous == null || index >= previous.lines().size() || !line.equals(previous.lines().get(index))) {
-                    score.setDisplayName(line);
-                }
+        List<Component> oldLines = newObjective ? List.of() : previous == null ? null : previous.lines();
+        BoardDiff diff = BoardDiff.between(previous == null ? null : previous.title(), oldLines, title, lines);
+        if (!newObjective && diff.titleChanged()) {
+            objective.setTitle(TextHolder.of(title));
+        }
+        for (int slot : diff.removed()) {
+            String holder = BoardDiff.holder(slot);
+            if (objective.getScore(holder) != null) {
+                objective.removeScore(holder);
             }
         }
-        int oldCount = previous == null ? 15 : previous.lines().size();
-        for (int index = lines.size(); index < oldCount; index++) {
-            if (objective.getScore(holder(index)) != null) {
-                objective.removeScore(holder(index));
+        for (BoardDiff.LineUpdate update : diff.updated()) {
+            String holder = BoardDiff.holder(update.slot());
+            ProxyScore score = objective.getScore(holder);
+            if (score == null) {
+                objective.setScore(holder, builder -> builder.score(update.score())
+                        .displayName(lines.get(update.slot())).numberFormat(NumberFormat.blank()));
+            } else {
+                if (update.scoreChanged()) {
+                    score.setScore(update.score());
+                }
+                if (update.textChanged()) {
+                    score.setDisplayName(lines.get(update.slot()));
+                }
             }
         }
         rendered.put(player.getUniqueId(), new RenderedBoard(title, List.copyOf(lines)));
@@ -93,10 +95,6 @@ final class SidebarRenderer {
 
     synchronized void forget(Player player) {
         rendered.remove(player.getUniqueId());
-    }
-
-    private static String holder(int index) {
-        return "vb_" + index;
     }
 
     private record RenderedBoard(Component title, List<Component> lines) {
