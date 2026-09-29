@@ -20,7 +20,7 @@ import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 public final class PlaceholderRegistry {
     private static final Pattern TOKEN = Pattern.compile("%([a-z][a-z0-9_]*)%");
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
-    private final Map<String, Function<Player, String>> immediate = new HashMap<>();
+    private final Map<String, Function<Player, Component>> immediate = new HashMap<>();
     private final Map<String, CachedPlaceholder> cached = new HashMap<>();
     private final Map<String, PolledPlaceholder> polled = new HashMap<>();
     private final Consumer<UUID> onChange;
@@ -30,6 +30,11 @@ public final class PlaceholderRegistry {
     }
 
     public synchronized void register(String name, Function<Player, String> resolver) {
+        Objects.requireNonNull(resolver);
+        registerComponent(name, player -> Component.text(Objects.toString(resolver.apply(player), "")));
+    }
+
+    public synchronized void registerComponent(String name, Function<Player, Component> resolver) {
         checkName(name);
         if (contains(name)) {
             throw new IllegalArgumentException("Placeholder already registered: " + name);
@@ -50,6 +55,12 @@ public final class PlaceholderRegistry {
     }
 
     synchronized void registerPolled(String name, Duration interval, Function<Player, String> resolver) {
+        Objects.requireNonNull(resolver);
+        registerPolledComponent(name, interval,
+                player -> Component.text(Objects.toString(resolver.apply(player), "")));
+    }
+
+    synchronized void registerPolledComponent(String name, Duration interval, Function<Player, Component> resolver) {
         checkName(name);
         if (interval.isZero() || interval.isNegative()) {
             throw new IllegalArgumentException("Refresh interval must be positive");
@@ -82,7 +93,7 @@ public final class PlaceholderRegistry {
         return render(player, template, new HashMap<>());
     }
 
-    synchronized Component render(Player player, String template, Map<String, String> resolved) {
+    synchronized Component render(Player player, String template, Map<String, Component> resolved) {
         Matcher matcher = TOKEN.matcher(template);
         StringBuilder result = new StringBuilder();
         TagResolver.Builder tags = TagResolver.builder();
@@ -92,17 +103,17 @@ public final class PlaceholderRegistry {
             if (!contains(name)) {
                 continue;
             }
-            String value = resolved.computeIfAbsent(name, ignored -> {
+            Component value = resolved.computeIfAbsent(name, ignored -> {
                 if (immediate.containsKey(name)) {
-                    return Objects.toString(immediate.get(name).apply(player), "");
+                    return Objects.requireNonNullElse(immediate.get(name).apply(player), Component.empty());
                 }
                 if (cached.containsKey(name)) {
-                    return cached.get(name).get(player);
+                    return Component.text(cached.get(name).get(player));
                 }
                 return polled.get(name).get(player.getUniqueId());
             });
             String tag = "vb_value_" + index++;
-            tags.resolver(Placeholder.unparsed(tag, value == null ? "" : value));
+            tags.resolver(Placeholder.component(tag, value));
             matcher.appendReplacement(result, Matcher.quoteReplacement("<" + tag + ">"));
         }
         matcher.appendTail(result);
@@ -172,10 +183,10 @@ public final class PlaceholderRegistry {
 
     private static final class PolledPlaceholder {
         private Duration interval;
-        private final Function<Player, String> resolver;
+        private final Function<Player, Component> resolver;
         private final Map<UUID, PolledValue> values = new HashMap<>();
 
-        private PolledPlaceholder(Duration interval, Function<Player, String> resolver) {
+        private PolledPlaceholder(Duration interval, Function<Player, Component> resolver) {
             this.interval = interval;
             this.resolver = resolver;
         }
@@ -186,15 +197,14 @@ public final class PlaceholderRegistry {
             if (!force && previous != null && now < previous.nextRefresh) {
                 return false;
             }
-            String value = resolver.apply(player);
-            value = value == null ? "" : value;
+            Component value = Objects.requireNonNullElse(resolver.apply(player), Component.empty());
             values.put(id, new PolledValue(value, now + interval.toNanos()));
             return previous == null || !value.equals(previous.text);
         }
 
-        private String get(UUID id) {
+        private Component get(UUID id) {
             PolledValue value = values.get(id);
-            return value == null ? "" : value.text;
+            return value == null ? Component.empty() : value.text;
         }
 
         private void forget(UUID id) {
@@ -202,7 +212,7 @@ public final class PlaceholderRegistry {
         }
     }
 
-    private record PolledValue(String text, long nextRefresh) {
+    private record PolledValue(Component text, long nextRefresh) {
     }
 
     private static final class CachedValue {

@@ -25,7 +25,7 @@ import org.slf4j.Logger;
 
 @Plugin(id = "velociboard", name = "VelociBoard", version = "0.1.0-SNAPSHOT",
         description = "Sidebar scoreboards for Velocity networks", authors = {"SamTheDevDE"},
-        dependencies = {@Dependency(id = "velocity-scoreboard-api")})
+        dependencies = {@Dependency(id = "velocity-scoreboard-api"), @Dependency(id = "luckperms", optional = true)})
 public final class VelociBoard {
     private final ProxyServer proxy;
     private final Logger logger;
@@ -55,6 +55,16 @@ public final class VelociBoard {
 
     @Subscribe
     public void onProxyInitialize(ProxyInitializeEvent event) {
+        if (proxy.getPluginManager().getPlugin("luckperms").isPresent()) {
+            try {
+                LuckPermsPlaceholders.install(placeholders);
+            } catch (IllegalStateException | LinkageError error) {
+                logger.warn("LuckPerms placeholders unavailable: {}", error.getMessage());
+                registerEmptyLuckPermsPlaceholders();
+            }
+        } else {
+            registerEmptyLuckPermsPlaceholders();
+        }
         reload();
         CommandMeta meta = proxy.getCommandManager().metaBuilder("velociboard")
                 .aliases("vboard", "vb")
@@ -93,6 +103,12 @@ public final class VelociBoard {
     private void refreshPlayer(UUID playerId) {
         proxy.getScheduler().buildTask(this, () -> proxy.getPlayer(playerId)
                 .ifPresent(player -> renderer.refresh(player, config))).schedule();
+    }
+
+    private void registerEmptyLuckPermsPlaceholders() {
+        placeholders.register("luckperms_prefix", player -> "");
+        placeholders.register("luckperms_suffix", player -> "");
+        placeholders.register("luckperms_primary_group", player -> "");
     }
 
     private boolean reload() {

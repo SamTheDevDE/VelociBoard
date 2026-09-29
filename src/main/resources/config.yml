@@ -4,3 +4,6 @@ placeholder-refresh:
   server_online: 1000
   network_online: 1000
   ping: 5000
+  luckperms_prefix: 1000
+  luckperms_suffix: 1000
+  luckperms_primary_group: 1000

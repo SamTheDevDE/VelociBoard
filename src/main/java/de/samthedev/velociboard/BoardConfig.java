@@ -31,6 +31,9 @@ record BoardConfig(boolean enabled, List<BoardDefinition> boards, Map<String, Du
         refresh.put("server_online", Duration.ofMillis(1000));
         refresh.put("network_online", Duration.ofMillis(1000));
         refresh.put("ping", Duration.ofMillis(5000));
+        refresh.put("luckperms_prefix", Duration.ofMillis(1000));
+        refresh.put("luckperms_suffix", Duration.ofMillis(1000));
+        refresh.put("luckperms_primary_group", Duration.ofMillis(1000));
         Object customRefresh = global.get("placeholder-refresh");
         if (customRefresh != null) {
             if (!(customRefresh instanceof Map<?, ?> settings)) {
