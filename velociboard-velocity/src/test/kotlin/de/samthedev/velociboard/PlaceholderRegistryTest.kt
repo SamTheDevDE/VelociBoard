@@ -2,6 +2,8 @@ package de.samthedev.velociboard
 
 import com.velocitypowered.api.proxy.Player
 import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.format.NamedTextColor
+import net.kyori.adventure.text.format.TextDecoration
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -17,6 +19,23 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class PlaceholderRegistryTest {
     private val plain = PlainTextComponentSerializer.plainText()
+
+    @Test
+    fun rendersMiniMessageColorsAndDecorationsAlongsidePlaceholders() {
+        val player = Mockito.mock(Player::class.java)
+        val placeholders = PlaceholderRegistry { }
+        placeholders.register("name") { "Alex" }
+
+        val title = placeholders.render(player, "<light_purple><bold>LOBBY</bold></light_purple>")
+        val line = placeholders.render(player, "<gray>Player: <white>%name%")
+
+        assertEquals("LOBBY", plain.serialize(title))
+        assertEquals(NamedTextColor.LIGHT_PURPLE, title.color())
+        assertEquals(TextDecoration.State.TRUE, title.decoration(TextDecoration.BOLD))
+        assertEquals("Player: Alex", plain.serialize(line))
+        assertEquals(NamedTextColor.GRAY, line.color())
+        assertEquals(NamedTextColor.WHITE, line.children().single().color())
+    }
 
     @Test
     fun replacesKnownTokensWithoutParsingTheirTextAsMiniMessage() {

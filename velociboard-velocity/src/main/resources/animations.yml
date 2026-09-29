@@ -2,6 +2,6 @@ title:
   interval: 250
   mode: loop
   frames:
-    - "<purple>V"
-    - "<purple>Veloci"
-    - "<purple><bold>VelociBoard</bold></purple>"
+    - "<light_purple>V"
+    - "<light_purple>Veloci"
+    - "<light_purple><bold>VelociBoard</bold></light_purple>"

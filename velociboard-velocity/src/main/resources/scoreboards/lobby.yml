@@ -3,7 +3,7 @@ servers:
   - lobby
 priority: 100
 
-title: "<purple><bold>LOBBY</bold></purple>"
+title: "<light_purple><bold>LOBBY</bold></light_purple>"
 lines:
   - ""
   - "<gray>%player_name%"
