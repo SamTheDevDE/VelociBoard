@@ -17,13 +17,16 @@ import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.scheduler.ScheduledTask;
+import de.samthedev.velociboard.api.VelociBoardAPI;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -38,6 +41,8 @@ import org.slf4j.Logger;
         dependencies = {@Dependency(id = "velocity-scoreboard-api"), @Dependency(id = "luckperms", optional = true)})
 public final class VelociBoard {
     private static final Pattern PLACEHOLDER = Pattern.compile("%([a-z][a-z0-9_]*)%");
+    private static final String HIDDEN_OVERRIDE = "\u0000hidden";
+    private static volatile VelociBoardAPI api;
     private final ProxyServer proxy;
     private final Logger logger;
     private final Path dataDirectory;
@@ -46,6 +51,7 @@ public final class VelociBoard {
     private final SidebarRenderer renderer;
     private final BackendBridge bridge;
     private final PreferenceStore preferences;
+    private final VelociBoardAPI publicApi = new PluginApi();
     private final Map<UUID, PreferenceState> preferenceStates = new ConcurrentHashMap<>();
     private final Map<UUID, String> previews = new ConcurrentHashMap<>();
     private ScheduledTask refreshTask;
@@ -71,6 +77,15 @@ public final class VelociBoard {
         placeholders.registerPolled("network_online", Duration.ofSeconds(1),
                 player -> Integer.toString(proxy.getPlayerCount()));
         placeholders.registerPolled("ping", Duration.ofSeconds(5), player -> Long.toString(player.getPing()));
+    }
+
+    /** Returns the API after Velocity has initialized the plugin. */
+    public static VelociBoardAPI getApi() {
+        VelociBoardAPI current = api;
+        if (current == null) {
+            throw new IllegalStateException("VelociBoard is not running");
+        }
+        return current;
     }
 
     @Subscribe
@@ -111,12 +126,14 @@ public final class VelociBoard {
                 }
             }
         }).repeat(Duration.ofMillis(50)).schedule();
+        api = publicApi;
         logger.info("VelociBoard started");
     }
 
     @Subscribe
     public void onProxyShutdown(ProxyShutdownEvent event) {
         stopping = true;
+        api = null;
         if (refreshTask != null) {
             refreshTask.cancel();
         }
@@ -170,6 +187,10 @@ public final class VelociBoard {
 
     private void refreshBoard(Player player, BoardConfig current) {
         String previewId = previews.get(player.getUniqueId());
+        if (HIDDEN_OVERRIDE.equals(previewId)) {
+            renderer.remove(player);
+            return;
+        }
         BoardDefinition preview = current == null || previewId == null ? null : current.boards().stream()
                 .filter(board -> board.id().equals(previewId)).findFirst().orElse(null);
         renderer.refresh(player, current, preview);
@@ -412,6 +433,79 @@ public final class VelociBoard {
             }
         }
         player.sendMessage(Component.text("Bridge: " + bridge.describe(player), NamedTextColor.GRAY));
+    }
+
+    private final class PluginApi implements VelociBoardAPI {
+        private final Placeholders placeholdersApi = new PlaceholderAccess();
+
+        @Override
+        public Placeholders placeholders() {
+            return placeholdersApi;
+        }
+
+        @Override
+        public boolean showBoard(Player player, String boardId) {
+            BoardConfig current = config;
+            if (stopping || current == null || proxy.getPlayer(player.getUniqueId()).orElse(null) != player) {
+                return false;
+            }
+            BoardDefinition board = current.boards().stream().filter(candidate -> candidate.id().equals(boardId))
+                    .findFirst().orElse(null);
+            if (board == null) {
+                return false;
+            }
+            previews.put(player.getUniqueId(), board.id());
+            refreshPlayer(player.getUniqueId());
+            return true;
+        }
+
+        @Override
+        public void hideBoard(Player player) {
+            if (!stopping && proxy.getPlayer(player.getUniqueId()).orElse(null) == player) {
+                previews.put(player.getUniqueId(), HIDDEN_OVERRIDE);
+                refreshPlayer(player.getUniqueId());
+            }
+        }
+
+        @Override
+        public void refresh(Player player) {
+            if (proxy.getPlayer(player.getUniqueId()).orElse(null) == player) {
+                refreshPlayer(player.getUniqueId());
+            }
+        }
+
+        private final class PlaceholderAccess implements Placeholders {
+            private final Set<String> owned = new HashSet<>();
+
+            @Override
+            public synchronized void register(String name, java.util.function.Function<Player, String> resolver) {
+                placeholders.register(name, resolver);
+                owned.add(name);
+                refreshAll();
+            }
+
+            @Override
+            public synchronized void registerCached(String name, Duration interval,
+                    java.util.function.Function<Player, java.util.concurrent.CompletionStage<String>> resolver) {
+                placeholders.registerCached(name, interval, resolver);
+                owned.add(name);
+                refreshAll();
+            }
+
+            @Override
+            public synchronized void unregister(String name) {
+                if (owned.remove(name)) {
+                    placeholders.unregister(name);
+                    refreshAll();
+                }
+            }
+
+            private void refreshAll() {
+                for (Player player : proxy.getAllPlayers()) {
+                    refreshPlayer(player.getUniqueId());
+                }
+            }
+        }
     }
 
     private sealed interface PreferenceState permits Loading, Ready {

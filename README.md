@@ -113,4 +113,17 @@ VelociBoardBridge.refresh(player); // Call after an event changes the balance.
 
 Use `%backend_economy_balance%` on Velocity. The synchronous provider runs on the player's entity thread and should only read local, fast data. For database-backed data, use `registerAsyncPlaceholder(name, refreshInterval, uuid -> completionStage)`; VelociBoard caches its latest result and never waits for it while gathering a snapshot. Call `unregisterPlaceholder(name)` when the owning plugin disables. Values are limited to 256 UTF-8 bytes.
 
+## Velocity API
+
+Proxy plugins can compile against the Velocity jar and use the API after plugin initialization. Declare VelociBoard as a plugin dependency so it is loaded first.
+
+```java
+VelociBoardAPI api = VelociBoard.getApi();
+api.placeholders().register("queue_position", player -> queueCache.getOrDefault(player.getUniqueId(), "0"));
+api.refresh(player); // Call when the cached value changes.
+api.showBoard(player, "lobby");
+```
+
+`registerCached` accepts an asynchronous resolver and a refresh interval. It keeps the last result while a refresh runs. Fast `register` resolvers may run while rendering, so read local state there. Remove your placeholders with `api.placeholders().unregister(name)` when your plugin stops. `showBoard` and `hideBoard` apply until the player changes server or disconnects; they do not change the saved toggle preference.
+
 If you used the earlier single-board config, VelociBoard copies its title and lines into `scoreboards/default.yml` when the directory is first created. The old entries in `config.yml` can then be removed.
