@@ -5,6 +5,7 @@ import com.velocitypowered.api.command.CommandMeta;
 import com.velocitypowered.api.command.SimpleCommand;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
+import com.velocitypowered.api.event.player.KickedFromServerEvent;
 import com.velocitypowered.api.event.player.ServerPostConnectEvent;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
@@ -33,6 +34,7 @@ public final class VelociBoard {
     private volatile BoardConfig config;
     private final PlaceholderRegistry placeholders;
     private final SidebarRenderer renderer;
+    private final BackendBridge bridge;
     private ScheduledTask refreshTask;
     private long nextConditionCheck = Long.MIN_VALUE;
 
@@ -43,6 +45,7 @@ public final class VelociBoard {
         this.dataDirectory = dataDirectory;
         this.placeholders = new PlaceholderRegistry(this::refreshPlayer);
         this.renderer = new SidebarRenderer(placeholders);
+        this.bridge = new BackendBridge(proxy, logger, this::refreshPlayer);
         placeholders.register("player_name", Player::getUsername);
         placeholders.register("player_uuid", player -> player.getUniqueId().toString());
         placeholders.register("server_name", player -> player.getCurrentServer()
@@ -52,10 +55,15 @@ public final class VelociBoard {
         placeholders.registerPolled("network_online", Duration.ofSeconds(1),
                 player -> Integer.toString(proxy.getPlayerCount()));
         placeholders.registerPolled("ping", Duration.ofSeconds(5), player -> Long.toString(player.getPing()));
+        placeholders.register("backend_world", player -> bridge.value(player, "world"));
+        placeholders.register("backend_x", player -> bridge.value(player, "x"));
+        placeholders.register("backend_y", player -> bridge.value(player, "y"));
+        placeholders.register("backend_z", player -> bridge.value(player, "z"));
     }
 
     @Subscribe
     public void onProxyInitialize(ProxyInitializeEvent event) {
+        bridge.start(this);
         if (proxy.getPluginManager().getPlugin("luckperms").isPresent()) {
             try {
                 LuckPermsPlaceholders.install(placeholders);
@@ -80,6 +88,7 @@ public final class VelociBoard {
             if (now >= nextConditionCheck) {
                 nextConditionCheck = now + Duration.ofSeconds(1).toNanos();
                 conditionsDue = current != null && current.hasConditions();
+                bridge.expire();
             }
             for (Player player : proxy.getAllPlayers()) {
                 if (placeholders.update(player, false) || animated || conditionsDue) {
@@ -95,10 +104,12 @@ public final class VelociBoard {
         if (refreshTask != null) {
             refreshTask.cancel();
         }
+        bridge.stop(this);
     }
 
     @Subscribe
     public void onServerConnect(ServerPostConnectEvent event) {
+        bridge.clearOnSwitch(event.getPlayer());
         placeholders.update(event.getPlayer(), true);
         renderer.refresh(event.getPlayer(), config);
     }
@@ -107,6 +118,13 @@ public final class VelociBoard {
     public void onDisconnect(DisconnectEvent event) {
         renderer.forget(event.getPlayer());
         placeholders.forget(event.getPlayer().getUniqueId());
+        bridge.forget(event.getPlayer());
+    }
+
+    @Subscribe
+    public void onKickedFromServer(KickedFromServerEvent event) {
+        bridge.forget(event.getPlayer());
+        renderer.refresh(event.getPlayer(), config);
     }
 
     private void refreshPlayer(UUID playerId) {

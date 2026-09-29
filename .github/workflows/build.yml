@@ -18,4 +18,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: VelociBoard
-          path: build/libs/VelociBoard-Velocity-*.jar
+          path: |
+            velociboard-velocity/build/libs/VelociBoard-Velocity-*.jar
+            velociboard-paper/build/libs/VelociBoard-Paper-*.jar

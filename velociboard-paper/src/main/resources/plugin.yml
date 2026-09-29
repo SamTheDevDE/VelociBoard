@@ -1,0 +1,7 @@
+name: VelociBoardPaper
+version: ${version}
+main: de.samthedev.velociboard.paper.VelociBoardPaper
+api-version: '26.2'
+folia-supported: true
+description: Sends backend values to VelociBoard on Velocity
+author: SamTheDevDE

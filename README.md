@@ -1,6 +1,6 @@
 # VelociBoard
 
-VelociBoard is a sidebar scoreboard plugin for Velocity networks. The proxy owns the scoreboard; backend servers do not need to install it.
+VelociBoard is a sidebar scoreboard plugin for Velocity networks. The proxy owns the scoreboard. A small Paper/Folia bridge is available if you want backend values.
 
 This project is in early development. The current build displays proxy sidebars with MiniMessage formatting and native placeholders. It selects boards by backend server and priority, updates on server switches, and supports `/velociboard reload`.
 
@@ -14,7 +14,7 @@ Use Java 25 or newer and run:
 ./gradlew build
 ```
 
-The plugin jar is written to `build/libs/`.
+The Velocity and Paper jars are written to `velociboard-velocity/build/libs/` and `velociboard-paper/build/libs/`.
 
 ## Install
 
@@ -84,5 +84,11 @@ Condition and permission changes are checked once per second. A line that no lon
 Native placeholders: `%player_name%`, `%player_uuid%`, `%server_name%`, `%server_online%`, `%network_online%`, and `%ping%`. Unknown placeholders remain visible so typos are easier to spot. The refresh values are milliseconds; counts and ping use cached values and one shared refresh task. Player name, UUID, and server name update on join or server switch.
 
 If LuckPerms is installed on Velocity, `%luckperms_prefix%`, `%luckperms_suffix%`, and `%luckperms_primary_group%` read its loaded user data. Prefix and suffix colors in legacy `&` or `§` format are supported. These placeholders show an empty value when LuckPerms is absent or the user has no value. VelociBoard does not query LuckPerms storage while rendering.
+
+## Paper/Folia bridge
+
+The bridge is optional. Put `VelociBoard-Paper-*.jar` in a Paper or Folia server's `plugins/` directory to send world and block coordinates to Velocity. It requires Paper/Folia 26.2 or newer and Java 25. It does not create or change scoreboards on the backend.
+
+Use `%backend_world%`, `%backend_x%`, `%backend_y%`, and `%backend_z%` in board files. They are empty until the backend sends a value. The bridge sends changed values once per second and a small heartbeat every ten seconds. Velocity checks the message size, format, player UUID, and sending server before accepting it.
 
 If you used the earlier single-board config, VelociBoard copies its title and lines into `scoreboards/default.yml` when the directory is first created. The old entries in `config.yml` can then be removed.
