@@ -66,6 +66,21 @@ title:
 
 `loop` restarts after the last frame. `bounce` walks back toward the first frame. One shared task advances animations for all players.
 
+Boards and individual lines can use a `permission` or a `condition`. Conditions compare one placeholder with a literal value using `==`, `!=`, `>`, `<`, `>=`, or `<=`. The ordering operators require a number on the right. For example:
+
+```yaml
+condition: "%server_name% == lobby"
+permission: velociboard.view.lobby
+lines:
+  - "<gray>Welcome"
+  - text: "<red>Queue: %queue_position%"
+    condition: "%queue_position% > 0"
+  - text: "<gold>Staff online"
+    permission: velociboard.staff
+```
+
+Condition and permission changes are checked once per second. A line that no longer matches is removed without rebuilding the objective.
+
 Native placeholders: `%player_name%`, `%player_uuid%`, `%server_name%`, `%server_online%`, `%network_online%`, and `%ping%`. Unknown placeholders remain visible so typos are easier to spot. The refresh values are milliseconds; counts and ping use cached values and one shared refresh task. Player name, UUID, and server name update on join or server switch.
 
 If LuckPerms is installed on Velocity, `%luckperms_prefix%`, `%luckperms_suffix%`, and `%luckperms_primary_group%` read its loaded user data. Prefix and suffix colors in legacy `&` or `§` format are supported. These placeholders show an empty value when LuckPerms is absent or the user has no value. VelociBoard does not query LuckPerms storage while rendering.

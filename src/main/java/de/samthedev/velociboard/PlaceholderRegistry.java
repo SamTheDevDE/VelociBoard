@@ -16,6 +16,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 public final class PlaceholderRegistry {
     private static final Pattern TOKEN = Pattern.compile("%([a-z][a-z0-9_]*)%");
@@ -100,24 +101,36 @@ public final class PlaceholderRegistry {
         int index = 0;
         while (matcher.find()) {
             String name = matcher.group(1);
-            if (!contains(name)) {
+            Component value = resolve(player, name, resolved);
+            if (value == null) {
                 continue;
             }
-            Component value = resolved.computeIfAbsent(name, ignored -> {
-                if (immediate.containsKey(name)) {
-                    return Objects.requireNonNullElse(immediate.get(name).apply(player), Component.empty());
-                }
-                if (cached.containsKey(name)) {
-                    return Component.text(cached.get(name).get(player));
-                }
-                return polled.get(name).get(player.getUniqueId());
-            });
             String tag = "vb_value_" + index++;
             tags.resolver(Placeholder.component(tag, value));
             matcher.appendReplacement(result, Matcher.quoteReplacement("<" + tag + ">"));
         }
         matcher.appendTail(result);
         return miniMessage.deserialize(result.toString(), tags.build());
+    }
+
+    synchronized String resolveText(Player player, String name, Map<String, Component> resolved) {
+        Component value = resolve(player, name, resolved);
+        return value == null ? null : PlainTextComponentSerializer.plainText().serialize(value);
+    }
+
+    private Component resolve(Player player, String name, Map<String, Component> resolved) {
+        if (!contains(name)) {
+            return null;
+        }
+        return resolved.computeIfAbsent(name, ignored -> {
+            if (immediate.containsKey(name)) {
+                return Objects.requireNonNullElse(immediate.get(name).apply(player), Component.empty());
+            }
+            if (cached.containsKey(name)) {
+                return Component.text(cached.get(name).get(player));
+            }
+            return polled.get(name).get(player.getUniqueId());
+        });
     }
 
     synchronized void forget(UUID playerId) {

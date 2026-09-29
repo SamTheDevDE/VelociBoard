@@ -34,6 +34,7 @@ public final class VelociBoard {
     private final PlaceholderRegistry placeholders;
     private final SidebarRenderer renderer;
     private ScheduledTask refreshTask;
+    private long nextConditionCheck = Long.MIN_VALUE;
 
     @Inject
     public VelociBoard(ProxyServer proxy, Logger logger, @DataDirectory Path dataDirectory) {
@@ -74,8 +75,14 @@ public final class VelociBoard {
         refreshTask = proxy.getScheduler().buildTask(this, () -> {
             BoardConfig current = config;
             boolean animated = current != null && current.animations().tick();
+            boolean conditionsDue = false;
+            long now = System.nanoTime();
+            if (now >= nextConditionCheck) {
+                nextConditionCheck = now + Duration.ofSeconds(1).toNanos();
+                conditionsDue = current != null && current.hasConditions();
+            }
             for (Player player : proxy.getAllPlayers()) {
-                if (placeholders.update(player, false) || animated) {
+                if (placeholders.update(player, false) || animated || conditionsDue) {
                     renderer.refresh(player, current);
                 }
             }

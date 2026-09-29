@@ -101,4 +101,24 @@ class BoardConfigTest {
                 """);
         assertThrows(IllegalArgumentException.class, () -> BoardConfig.load(directory));
     }
+
+    @Test
+    void readsConditionalLines() throws Exception {
+        BoardConfig.load(directory);
+        Files.writeString(directory.resolve("scoreboards/lobby.yml"), """
+                enabled: true
+                servers: [lobby]
+                priority: 100
+                condition: "%server_name% == lobby"
+                title: Lobby
+                lines:
+                  - "Everyone"
+                  - text: "Staff"
+                    permission: velociboard.staff
+                """);
+        BoardConfig config = BoardConfig.load(directory);
+        assertTrue(config.hasConditions());
+        assertEquals(2, config.select("lobby").lines().size());
+        assertEquals("velociboard.staff", config.select("lobby").lines().get(1).permission());
+    }
 }

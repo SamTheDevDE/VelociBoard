@@ -29,7 +29,9 @@ final class SidebarRenderer {
         String serverName = player.getCurrentServer()
                 .map(connection -> connection.getServer().getServerInfo().getName())
                 .orElse("unknown");
-        BoardDefinition board = config == null ? null : config.select(serverName);
+        Map<String, Component> resolved = new HashMap<>();
+        BoardDefinition board = config == null ? null
+                : config.select(serverName, candidate -> candidate.allowed(player, placeholders, resolved));
         if (player.getProtocolVersion().lessThan(ProtocolVersion.MINECRAFT_1_20_3) || board == null) {
             remove(player);
             return;
@@ -38,7 +40,6 @@ final class SidebarRenderer {
         ProxyScoreboard scoreboard = ScoreboardManager.getInstance().getProxyScoreboard(player);
         RenderedBoard previous = rendered.get(player.getUniqueId());
         ProxyObjective objective = scoreboard.getObjective(OBJECTIVE_NAME);
-        Map<String, Component> resolved = new HashMap<>();
         Component title = placeholders.render(player, config.animations().apply(board.title()), resolved);
         if (objective == null) {
             objective = scoreboard.createObjective(OBJECTIVE_NAME, builder -> builder
@@ -51,8 +52,10 @@ final class SidebarRenderer {
         }
 
         List<Component> lines = new ArrayList<>(board.lines().size());
-        for (String line : board.lines()) {
-            lines.add(placeholders.render(player, config.animations().apply(line), resolved));
+        for (BoardLine line : board.lines()) {
+            if (line.visible(player, placeholders, resolved)) {
+                lines.add(placeholders.render(player, config.animations().apply(line.text()), resolved));
+            }
         }
         for (int index = 0; index < lines.size(); index++) {
             Component line = lines.get(index);

@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -90,20 +91,29 @@ record BoardConfig(boolean enabled, List<BoardDefinition> boards, Map<String, Du
         for (BoardDefinition board : boards) {
             animations.validate(board.id(), "title", board.title());
             for (int index = 0; index < board.lines().size(); index++) {
-                animations.validate(board.id(), "lines[" + index + "]", board.lines().get(index));
+                animations.validate(board.id(), "lines[" + index + "]", board.lines().get(index).text());
             }
         }
         return new BoardConfig(active, boards, Map.copyOf(refresh), animations);
     }
 
     BoardDefinition select(String serverName) {
+        return select(serverName, board -> true);
+    }
+
+    BoardDefinition select(String serverName, Predicate<BoardDefinition> allowed) {
         if (!enabled) {
             return null;
         }
-        return boards.stream().filter(board -> board.matches(serverName))
+        return boards.stream().filter(board -> board.matches(serverName) && allowed.test(board))
                 .max(Comparator.comparingInt(BoardDefinition::priority)
                         .thenComparing(BoardDefinition::id, Comparator.reverseOrder()))
                 .orElse(null);
+    }
+
+    boolean hasConditions() {
+        return boards.stream().anyMatch(board -> board.condition() != null || board.permission() != null
+                || board.lines().stream().anyMatch(line -> line.condition() != null || line.permission() != null));
     }
 
     static Map<?, ?> readYaml(Path file) {
