@@ -1,0 +1,10 @@
+enabled: true
+servers: [limbo, queue]
+priority: 100
+title: "<gradient:#8b5cf6:#c084fc><bold>TORUSMC</bold></gradient>"
+lines:
+  - "<gray>Queue"
+  - "<white>Please wait..."
+  - "<gray>Connecting you to a server"
+  - ""
+  - "<dark_gray>play.torusmc.com"
